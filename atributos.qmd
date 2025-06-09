@@ -102,8 +102,7 @@ formato <- function(x, digits = 4) {
 
 Este solucionario ha sido elaborado con base en los contenidos presentados en el libro *Control Estadístico de la Calidad*, desarrollado por el profesor **Oswaldo Bello** como material de apoyo para la asignatura del mismo nombre en la Universidad de Oriente, Núcleo Nueva Esparta.
 
-El libro está disponible en línea en el siguiente enlace:  
-🔗 [https://oswaldobelloc.github.io/libro_cec/](https://oswaldobelloc.github.io/libro_cec/)
+Estos ejercicios aplican los conceptos del [libro de Control Estadístico de la Calidad](https://oswaldobelloc.github.io/libro_cec/) del profesor Oswaldo Bello, especialmente los relacionados con los diagramas de control para atributos.
 
 Fue desarrollado por estudiantes de la carrera de Licenciatura en Estadística utilizando Quarto. Contiene ejemplos de los principales diagramas de control para atributos (`np`, `p`, `c`, `u`), aplicados con el lenguaje de programación R. Cada gráfico fue generado con el paquete `highcharter`, por su capacidad de generar visualizaciones interactivas y atractivas.
 
@@ -309,7 +308,7 @@ lsc_tmp <- n * p_est + 3 * sqrt(n * p_est * (1 - p_est))
 
 ```
 
-La nueva estimación de $p$ sería $`r formato(p_est)`$ y los limites de control superior e inferior serían $`r formato(lsc_tmp)`$ y $`r formato(lic_tmp)`$, respectivamente.
+Al eliminar estas observaciones la nueva estimación de $p$ sería $`r formato(p_est)`$ y los limites de control superior e inferior serían $`r formato(lsc_tmp)`$ y $`r formato(lic_tmp)`$, respectivamente.
 
 ```{r}
 #| label: fig-ejemplo-dcnp2-highcharter
@@ -375,7 +374,7 @@ highchart() |>
   hc_plotOptions( series = list(animation = FALSE) )
 ```
 
-Se observa em @fig-ejemplo-dcnp2-highcharter que eliminando las observaciones que estuvieron fuera de control, el proceso entra en estado bajo control. Por lo que, se concluye que la estimación de $p$ ($\bar{p}=`r formato(p_est)`$) es correcta para la supervisión futura de la producción de de componentes k12.
+Se observa em @fig-ejemplo-dcnp2-highcharter que eliminando las observaciones que estuvieron fuera de control, el proceso entra en estado bajo control. Por lo que, se concluye que la estimación de $p$ ($\bar{p}=`r formato(p_est)`$) es correcta para la supervisión futura de la producción de de componentes k12. 
 :::
 ::::
 
@@ -1527,6 +1526,8 @@ datos_dutmv$lic <- lic_tmp
 datos_dutmv$u_est <- u_est
 
 ```
+
+El diagrama de control ahora es el siguiente:
 
 ```{r}
 #| label: fig-ejemplo-dutmv2-highcharter

@@ -257,12 +257,14 @@ window.Quarto = {
 <section id="diagramas-de-control-para-atributos" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Diagramas de Control para Atributos</h1>
 <p style="text-align: justify;">
-</p><p>Este documento es un solucionario de ejercicios de <strong>Control Estadístico de la Calidad</strong>, correspondiente a la asignatura del mismo nombre dictada en la Universidad de Oriente, Núcleo Nueva Esparta, por el profesor Oswaldo Bello.</p>
+</p><p>Este solucionario ha sido elaborado con base en los contenidos presentados en el libro <em>Control Estadístico de la Calidad</em>, desarrollado por el profesor <strong>Oswaldo Bello</strong> como material de apoyo para la asignatura del mismo nombre en la Universidad de Oriente, Núcleo Nueva Esparta.</p>
+<p>Estos ejercicios aplican los conceptos del <a href="https://oswaldobelloc.github.io/libro_cec/">libro de Control Estadístico de la Calidad</a> del profesor Oswaldo Bello, especialmente los relacionados con los diagramas de control para atributos.</p>
 <p>Fue desarrollado por estudiantes de la carrera de Licenciatura en Estadística utilizando Quarto. Contiene ejemplos de los principales diagramas de control para atributos (<code>np</code>, <code>p</code>, <code>c</code>, <code>u</code>), aplicados con el lenguaje de programación R. Cada gráfico fue generado con el paquete <code>highcharter</code>, por su capacidad de generar visualizaciones interactivas y atractivas.</p>
 <p>Este material tiene fines tanto evaluativos como educativos, sirviendo de guía para futuros cursos.</p>
 <p></p>
 <section id="diagrama-np" class="level2" data-number="1.1">
 <h2 data-number="1.1" class="anchored" data-anchor-id="diagrama-np"><span class="header-section-number">1.1</span> Diagrama <span class="math inline">\(np\)</span></h2>
+<p>El diagrama <span class="math inline">\(np\)</span> se utiliza para monitorear el número de unidades defectuosas en un proceso de producción. Se aplica específicamente cuando el tamaño de la muestra es constante, permitiendo a los analistas observar la variabilidad en el número de defectos a lo largo del tiempo.</p>
 <div class="callout callout-style-simple callout-tip no-icon">
 <div class="callout-body d-flex">
 <div class="callout-icon-container">
@@ -561,6 +563,7 @@ Figura&nbsp;2: Diagrama <span class="math inline">\(np\)</span> para el numero d
 </section>
 <section id="diagrama-p" class="level2" data-number="1.2">
 <h2 data-number="1.2" class="anchored" data-anchor-id="diagrama-p"><span class="header-section-number">1.2</span> Diagrama <span class="math inline">\(p\)</span></h2>
+<p>El diagrama <span class="math inline">\(p\)</span> muestra las variaciones en la proporción de artículos defectuosos por muestra o subgrupo. Es ampliamente usada para evaluar el desempeño de una parte o de todo un proceso, tomando en cuenta su variabilidad con el propósito de detectar causas o cambios especiales en el proceso.</p>
 <div class="callout callout-style-simple callout-tip no-icon">
 <div class="callout-body d-flex">
 <div class="callout-icon-container">
@@ -1294,6 +1297,7 @@ Figura&nbsp;5: Diagrama p para el número de piezas de valvulas defectuosas
 </section>
 <section id="diagrama-c" class="level2" data-number="1.3">
 <h2 data-number="1.3" class="anchored" data-anchor-id="diagrama-c"><span class="header-section-number">1.3</span> Diagrama <span class="math inline">\(c\)</span></h2>
+<p>El diagrama <span class="math inline">\(c\)</span> analiza la variabilidad del número de defectos en un proceso. Se aplica específicamente cuando el tamaño de la muestra o subgrupo se mantiene constante. permite visualizar y monitorear el número de defectos encontrados al inspeccionar unidades de producto o servicio, ayudando a identificar tendencias o variaciones en el proceso de producción.</p>
 <div class="callout callout-style-simple callout-tip no-icon">
 <div class="callout-body d-flex">
 <div class="callout-icon-container">
@@ -1347,7 +1351,7 @@ Figura&nbsp;5: Diagrama p para el número de piezas de valvulas defectuosas
 <span id="cb17-40"><a href="#cb17-40"></a><span class="in">)</span></span>
 <span id="cb17-41"><a href="#cb17-41"></a><span class="in">```</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="tbl-datos-ejemplo-dcc" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-tbl-cap-align="left" data-tbl-align="left">
+<div id="tbl-datos-ejemplo-dcc" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-tbl-align="left" data-tbl-cap-align="left">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-datos-ejemplo-dcc-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Tabla&nbsp;4: Número promedio de operaciones por trabajador por día y semana
@@ -1617,6 +1621,7 @@ Figura&nbsp;7: Diagrama <span class="math inline">\(c\)</span> para el número d
 </section>
 <section id="diagrama-u" class="level2" data-number="1.4">
 <h2 data-number="1.4" class="anchored" data-anchor-id="diagrama-u"><span class="header-section-number">1.4</span> Diagrama <span class="math inline">\(u\)</span></h2>
+<p>El diagrama <span class="math inline">\(u\)</span> permite monitorear el número promedio de defectos por unidad en un proceso de producción. es especialmente útil cuando el tamaño de las muestras varía, lo que permite un análisis más flexible y adaptado a diferentes situaciones de producción. Permite a las organizaciones evaluar la calidad de sus productos al registrar el número promedio de defectos por unidad, incluso cuando el tamaño de las muestras no&nbsp;es&nbsp;constante.</p>
 <div class="callout callout-style-simple callout-tip no-icon">
 <div class="callout-body d-flex">
 <div class="callout-icon-container">
@@ -1672,7 +1677,7 @@ Figura&nbsp;7: Diagrama <span class="math inline">\(c\)</span> para el número d
 <span id="cb24-42"><a href="#cb24-42"></a><span class="in">)</span></span>
 <span id="cb24-43"><a href="#cb24-43"></a><span class="in">```</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="tbl-datos-ejemplo1-dcu" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-tbl-cap-align="left" data-tbl-align="left">
+<div id="tbl-datos-ejemplo1-dcu" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-tbl-align="left" data-tbl-cap-align="left">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-datos-ejemplo1-dcu-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Tabla&nbsp;5: Número de rugosidades encontradas en los lotes producidos en dos semanas
