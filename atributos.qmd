@@ -1,0 +1,1592 @@
+---
+title: "Diagramas de Control Aplicados con ${\\color{Blue} \\textbf{\\textsf{R}}}$"
+author:
+  - Andrea Rodriguez
+  - Victor Rodriguez
+  - Sebastian Zabala
+format: html
+author-title: |
+      <p>AUTORES:</p>
+title-block-banner: true
+block-banner-color: "#FFDDFF"
+html_align: justify
+number-sections: true
+number-depth: 4
+highlight-style: github
+code-fold: true
+code-copy: true
+code-block-bg: true
+code-block-border-left: "#31BAE9"
+code-block-border-left-size: 3px
+callout-border-width: 1px
+code-overflow: scroll
+code-summary: "Código"
+html-math-method: mathjax
+toc: true
+toc-depth: 4
+toc-location: right
+toc-title: Contenido
+theme:
+- cosmo
+# - r4ds.scss
+code-line-numbers: true
+# code-link: true
+editor: visual
+execute:
+  warning: false
+  message: false
+  error: false
+  abvertence: false
+  echo: fenced
+  cache: true
+  freeze: auto 
+lang: es
+
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+#| label: carga-paquetes
+#| include: false
+#| echo: false
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
+library(pacman)
+pacman::p_load(ggplot2,ggfortify, DT, reshape2, knitr,  tidyverse, ggQC, pammtools, latex2exp, data.table, reactable, htmlwidgets, htmltools, highcharter, tinytex, qcc, kableExtra)
+```
+
+```{r}
+#| include: false
+
+# Crear automaticamente una base de datos bib para los paquetes de R 
+knitr::write_bib(
+  c(
+    .packages(), "knitr", "tidyverse", "qcc", "ggQC", "plotly",
+    "highcharter", "kableExtra", "data.table", "pacman",
+    "renv", "pammtools", "htmlwidgets", "htmltools", "data.table",
+    "RColorBrewer"
+  ),
+  "packages.bib"
+)
+
+```
+
+```{r}
+#| label: funciones-creadas
+#| include: false
+#| echo: false
+
+# funcion para ajustar fill-opacity usando css
+fillOpacity <- function(., alpha = 0.5) {
+  css <- sprintf("<style> .js-fill { fill-opacity: %s}
+!important; } </style>", alpha)
+  prependContent(., HTML(css))
+}
+
+# funcion para dar formato a numero
+formato <- function(x, digits = 4) {
+  if (!is.numeric(x)) stop("¡La entrada debe ser numerica!")
+  format(
+    round(x, digits = digits),
+    mode = "double",
+    big.mark = ".",
+    decimal.mark = ","
+  )
+}
+
+```
+
+# Diagramas de Control para Atributos
+
+<p style="text-align: justify;">
+
+Este documento es un solucionario de ejercicios de **Control Estadístico de la Calidad**, correspondiente a la asignatura del mismo nombre dictada en la Universidad de Oriente, Núcleo Nueva Esparta, por el profesor Oswaldo Bello.
+
+Fue desarrollado por estudiantes de la carrera de Licenciatura en Estadística utilizando Quarto. Contiene ejemplos de los principales diagramas de control para atributos (`np`, `p`, `c`, `u`), aplicados con el lenguaje de programación R. Cada gráfico fue generado con el paquete `highcharter`, por su capacidad de generar visualizaciones interactivas y atractivas.
+
+Este material tiene fines tanto evaluativos como educativos, sirviendo de guía para futuros cursos.
+
+</p>
+
+## Diagrama $np$
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dcnp .Example}
+### Aplicación del Diagrama $np$ {#sec-ejemplo-diagrama-np}
+
+<p style="text-align: justify;">
+
+Del análisis de los datos de inspecciones y pruebas finales de un producto ensamblado se detectó a través de una estratificación y un análisis de Pareto que la causa principal por la que los artículos salen defectuosos está relacionada con los problemas de un componente en particular (el componente k12). Por lo tanto, se decide analizar más de cerca el proceso que produce tal componente. Para ello, de cada lote de componentes k12 se decide inspeccionar una muestra de n = 120. Los datos obtenidos en 20 lotes consecutivos se muestran en la @tbl-datos-ejemplo1-dcnp. Como n es constante, la cantidad de defectuosos por muestra se puede analizar con una carta $np$.
+
+</p>
+
+```{r}
+#| label: tbl-datos-ejemplo1-dcnp
+#| tbl-cap: "Número de componentes k12 defectuosos por lote"
+#| tbl-align: left
+
+datos_np <- data.table::data.table(
+  muestra = c(
+    1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L, 19L, 20L
+  ),
+  Di = c(
+    9L, 6L,10L, 8L, 5L, 5L, 14L, 12L, 9L, 8L, 10L, 20L, 12L, 10L, 10L, 0L, 13L, 5L, 6L, 11L
+  )
+)
+options(
+  reactable.language = reactableLang(
+    searchPlaceholder = "Search...",
+    pageNext = "Siguiente",
+    pagePrevious = "Anterior",
+    noData = "No entries found",
+    pageInfo = "{rowStart} de {rowEnd} de {rows} filas"
+  )
+)
+
+reactable::reactable(
+  datos_np,
+  columns = list(
+    muestra = colDef(header = "Muestra"),
+    Di = colDef(
+      header = "Número  de Componentes defectuosos"
+    )
+  ),
+  defaultColDef = colDef(
+    # footer = function(values, name) {
+    #   htmltools::div(name, style = list(fontWeight = 600))
+    # },
+    align = "center",
+    minWidth = 100,
+    # maxWidth = 200
+  ),
+  fullWidth = TRUE,
+  # width = "100%",
+  # style = list(width = "100%"),
+  resizable = TRUE, 
+  wrap = FALSE, 
+  bordered = TRUE,
+  defaultPageSize = 10,
+  striped = TRUE,
+  highlight = TRUE,
+  filterable = TRUE
+)
+```
+
+En primer lugar, se necesita calcular el numero promedio de componentes defectuosos en k12 por lotes, representado por $\hat{p}$, el cual se obtiene mediante la expresión matemática:
+
+$$
+\begin{equation}
+\bar{p}=\frac{\sum_{i=1}^{m}d_{i}}{n*m}
+\end{equation}
+$$ {#eq-pestnp}
+
+Por lo que se obtiene de dividir el total de artículos defectuosos (183) entre el total de piezas inspeccionadas (20 muestras de 120 piezas cada una). Al reemplazar los datos en la @eq-pestnp, se tiene:
+
+$$\hat{p} = \frac{183}{20 \times 120} = 0.07625$$
+
+Con R, se obtiene de la siguiente manera:
+
+```{r}
+#| label: cp-dcnp
+
+m <- nrow(datos_np)
+n <- 120
+p_est <- sum(datos_np$Di) / (n * m)
+```
+
+Para la estimación de los limites de control, se hace uso de la carta de control de Shewhart, donde los limites vienen dados por las siguientes expresiones:
+
+$$
+\begin{align}
+LCS = n\bar{p}+3\sqrt{n\bar{p}(1-\bar{p})} \\
+LC = n\bar{p} \\ 
+LCI = n\bar{p}-3\sqrt{n\bar{p}(1-\bar{p})}
+\end{align}
+$$ {#eq-lcnp}
+
+Al sustituir los datos en @eq-lcnp, con R se obtiene lo siguiente:
+
+```{r}
+#| label: lci-dcnp
+#| tbl-align: left
+
+lic <- max(0, n * p_est - 3 * sqrt(n * p_est * (1 - p_est)))
+lc <- n * p_est
+lsc <- n * p_est + 3 * sqrt(n * p_est * (1 - p_est))
+paste0("LCS = ", formato(lsc), "    LC = ", formato(lc), "    LCI = ", formato(lic))
+```
+
+Una vez determinado los límites de control ya es posible realizar el grafico de control con los limites calculados. El cual se puede ver a continuación:
+
+```{r}
+#| label: fig-ejemplo-dcnp-highcharter
+#| fig-cap: "Diagrama $np$ para el numero de artículos defectuosos"
+
+highchart() |>
+  hc_add_series(
+    datos_np,
+    type = "line", hcaes(x = muestra, y = lsc), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "center", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 4)
+  ) |>
+  hc_add_series(
+    data = datos_np, hcaes(x = muestra, low = lc, high = lsc),
+    step = "center", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.3, name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    datos_np,
+    type = "line", hcaes(x = muestra, y = lic), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "center", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 0)
+  ) |>
+  hc_add_series(
+    datos_np,
+    type = "line", hcaes(x = muestra, y = lc), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "center", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    datos_np,
+    type = "line", hcaes(x = muestra, y = Di),
+    useHTML = TRUE, color = "black", name = "<b><i>D<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    marker = list(
+      symbol = "circle", fillColor = "white", radius = 3,
+      lineWidth = 2, lineColor = "black"
+    )
+  ) |>
+  hc_add_series(
+    data = datos_np, hcaes(x = muestra, low = lic, high = lc),
+    step = "center", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.3, name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Número de artículos defectuosos (d<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions( series = list(animation = FALSE) )
+```
+
+<p style="text-align: justify;">
+
+De la @fig-ejemplo-dcnp-highcharter se aprecia que el proceso no funcionó de manera estable, ya que el número de piezas defectuosas en la muestra del lote 12 es mayor que el límite superior; mientras que en la muestra del lote 16 el número de defectuosos es menor que el límite inferior. De aquí que se tenga una evidencia objetiva para afirmar que en la fabricación del lote 12 se presentó una causa o situación especial que normalmente no está presente en el proceso y que lo empeoró de forma seria; mientras que en el lote 16 ocurrió una causa especial que mejoró el desempeño del proceso de fabricación de componentes k12. Es necesario localizar ambas causas, ya que así se estará en posibilidades de prevenir la primera, y en caso de no haber un error en el registro de los datos, fomentar la segunda. Con el fin de establecer una estimación de $p$ que ayude a supervisar las producciones futuras, el diagrama debe ser recalculado a partir de la estimación de $p$, utilizando la @eq-pestnp, eliminando estas observaciones.
+
+</p>
+
+```{r}
+#| include: FALSE
+#| label: lci-dcnp-2
+#| tbl-align: left
+
+datos_np <- datos_np[-c(12,16),]
+m <- nrow(datos_np)
+p_est <- sum(datos_np$Di) / (n * m)
+
+lic_tmp <- max(0, n * p_est - 3 * sqrt(n * p_est * (1 - p_est)))
+lc <- n * p_est
+lsc_tmp <- n * p_est + 3 * sqrt(n * p_est * (1 - p_est))
+
+```
+
+La nueva estimación de $p$ sería $`r formato(p_est)`$ y los limites de control superior e inferior serían $`r formato(lsc_tmp)`$ y $`r formato(lic_tmp)`$, respectivamente.
+
+```{r}
+#| label: fig-ejemplo-dcnp2-highcharter
+#| fig-cap: "Diagrama $np$ para el numero de artículos defectuosos"
+
+highchart() |>
+  hc_add_series(
+    datos_np,
+    type = "line", hcaes(x = muestra, y = lsc), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "center", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 4)
+  ) |>
+  hc_add_series(
+    data = datos_np, hcaes(x = muestra, low = lc, high = lsc),
+    step = "center", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.3, name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    datos_np,
+    type = "line", hcaes(x = muestra, y = lic), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "center", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 0)
+  ) |>
+  hc_add_series(
+    datos_np,
+    type = "line", hcaes(x = muestra, y = lc), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "center", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    datos_np,
+    type = "line", hcaes(x = muestra, y = Di),
+    useHTML = TRUE, color = "black", name = "<b><i>D<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    marker = list(
+      symbol = "circle", fillColor = "white", radius = 3,
+      lineWidth = 2, lineColor = "black"
+    )
+  ) |>
+  hc_add_series(
+    data = datos_np, hcaes(x = muestra, low = lic, high = lc),
+    step = "center", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.3, name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Número de artículos defectuosos (d<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions( series = list(animation = FALSE) )
+```
+
+Se observa em @fig-ejemplo-dcnp2-highcharter que eliminando las observaciones que estuvieron fuera de control, el proceso entra en estado bajo control. Por lo que, se concluye que la estimación de $p$ ($\bar{p}=`r formato(p_est)`$) es correcta para la supervisión futura de la producción de de componentes k12.
+:::
+::::
+
+## Diagrama $p$
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dcp .Example}
+### Aplicación del Diagrama $p$ {#sec-ejemplo-diagrama-p}
+
+<p style="text-align: justify;">
+
+En una fábrica de artículos de plástico inyectado se tiene el problema de la rebaba en las piezas, que es necesario eliminar con retrabajo. Con el propósito de evaluar la realidad actual y detectar posibles causas especiales de variación se decide implementar una carta de control para el producto que más se fabrica, los datos obtenidos en 24 lotes de tamaño 500, en cuanto a la cantidad de piezas con rebaba como también su fracción de defectos se muestra en la @tbl-datos-ejemplo1-dcp:
+
+</p>
+
+```{r}
+#| label: tbl-datos-ejemplo1-dcp
+#| tbl-cap: "Cantidad de piezas con rebaba en cada muestra"
+#| tbl-align: left
+
+datos1_p <- data.table::data.table(
+  muestra = c(
+    1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L,
+    13L, 14L, 15L, 16L, 17L, 18L, 19L, 20L, 21L, 22L, 23L, 24L
+  ),
+  Di = c(86L, 95L, 113L, 93L, 88L, 101L, 90L, 85L, 111L, 80L, 96L, 89L,
+    98L, 126L, 96L, 124L, 129L, 115L, 95L, 78L, 97L, 110L, 108L, 118L
+  ),
+  Pi = c(86L, 95L, 113L, 93L, 88L, 101L, 90L, 85L, 111L, 80L, 96L, 89L,
+    98L, 126L, 96L, 124L, 129L, 115L, 95L, 78L, 97L, 110L, 108L, 118L
+  )/500
+)
+
+options(
+  reactable.language = reactableLang(
+    searchPlaceholder = "Search...",
+    pageNext = "Siguiente",
+    pagePrevious = "Anterior",
+    noData = "No entries found",
+    pageInfo = "{rowStart} de {rowEnd} de {rows} filas"
+  )
+)
+
+reactable::reactable(
+  datos1_p,
+  columns = list(
+    sample = colDef(header = "Muestra", align = "right"),
+    D = colDef(
+      header = "Cantidad de piezas con rebasa", 
+      align = "right"
+    ),
+    size = colDef(header = "Tamaño de la muestra", align = "right"),
+    trial = colDef(header = "Primer ensayo", align = "left")
+  ),
+  defaultColDef = colDef(
+    # footer = function(values, name) {
+    #   htmltools::div(name, style = list(fontWeight = 600))
+    # },
+    minWidth = 100,
+    # maxWidth = 200
+  ),
+  fullWidth = TRUE,
+  # width = "100%",
+  # style = list(width = "100%"),
+  resizable = TRUE, 
+  wrap = FALSE, 
+  bordered = TRUE,
+  defaultPageSize = 10,
+  striped = TRUE,
+  highlight = TRUE,
+  filterable = TRUE
+)
+```
+
+Se requieren los parametros para construir el diagrama de control. Nuevamente como no se tiene conocimiento sobre los parametros del proceso se tienen que estimar. Nuevamente se estima $p$ a traves de $\hat{p}$ a través de la @eq-pestnp. Cuyo resultado con R es el siguiente:
+
+```{r}
+#| label: p-est-dcp-1
+m <- nrow(datos1_p)
+n <- 500
+p_est <- sum(datos1_p$Di) / (n * m)
+paste0(formato(p_est))
+```
+
+Con el resultado anterior ya es posible calcular los limites de control a través de la siguiente formula:
+
+$$
+\begin{align}
+LCS = \bar{p}+3\sqrt{\bar{p}(1-\bar{p})} \\
+LC = \bar{p} \\ 
+LCI = \bar{p}-3\sqrt{\bar{p}(1-\bar{p})}
+\end{align}
+$$ {#eq-lcp}
+
+Sustituyendo los datos de la @tbl-datos-ejemplo1-dcp en la @eq-lcp, se tienen los siguientes resultados:
+
+```{r}
+#| label: lci-dcp-1
+
+lic <- max(0, p_est - 3 * sqrt(p_est * (1 - p_est) / n))
+lc <- p_est
+lsc <- p_est + 3 * sqrt(p_est * (1 - p_est) / n)
+paste0("LCI = ", formato(lic), "    LC = ", formato(lc), "    LCS = ", formato(lsc))
+```
+
+Una vez calculado los limites de control ya es posible realizar el diagrama. El cual se ve de la siguiente manera:
+
+```{r}
+#| label: fig-ejemplo-dcp-highcharter
+#| fig-cap: "Diagrama p para la cantidad de piezas con rebaba"
+
+highchart() |>
+  hc_chart(type = "line") |>
+  hc_add_series(
+    datos1_p,
+    type = "line", hcaes(x = muestra, y = lic), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "center", marker = list(enabled = FALSE)
+  ) |>
+  hc_add_series(
+    datos1_p,
+    type = "line", hcaes(x = muestra, y = lc), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>", step = "center",
+    marker = list(enabled = FALSE)
+  ) |>
+  hc_add_series(
+    datos1_p,
+    type = "line", hcaes(x = muestra, y = lsc), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "center", marker = list(enabled = FALSE)
+  ) |>
+  hc_add_series(
+    datos1_p,
+    type = "line", hcaes(x = muestra, y = Di / n),
+    useHTML = TRUE, color = "black", name = "<b><i>p<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    marker = list(
+      symbol = "circle", fillColor = "white", radius = 3,
+      lineWidth = 2, lineColor = "black"
+    )
+  ) |>
+  hc_add_series(
+    data = datos1_p, hcaes(x = muestra, low = lc, high = lsc),
+    step = "center", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, color = "green", name = "",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos1_p, hcaes(x = muestra, low = lic, high = lc),
+    step = "center", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, color = "blue", name = "",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Fracción de de piezas con rebasa</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE, valueDecimals = 4)
+```
+
+Como se puede observar en la @fig-ejemplo-dcp-highcharter, se encuentra un punto fuera del límite superior asociado a la muestra número 17. Por lo que suponiendo que dicho punto tenga causas atribuibles se puede decir que el proceso está fuera de control. Por consiguiente, se sugiere su exclusión con el fin de establecer una estimación de $p$ que ayude a supervisar las producciones futuras, el diagrama debe ser recalculado a partir de la estimación de $p$, utilizando la @eq-pestnp, eliminando esta observación como se puede observar en R:
+
+```{r}
+#| label: lci-dcp-2
+#| tbl-align: left
+
+datos1_p <- datos1_p[-c(17),]
+
+p_est <- sum(datos1_p$Di) / (n * m)
+
+lic_tmp <- max(0,p_est - 3 * sqrt(p_est * (1 - p_est)/ n))
+lc <- p_est
+lsc_tmp <- p_est + 3 * sqrt(p_est * (1 - p_est)/ n)
+
+```
+
+La nueva estimación de $p$ sería $`r formato(p_est)`$ y los limites de control superior e inferior serían $`r formato(lsc_tmp)`$ y $`r formato(lic_tmp)`$, respectivamente. Por lo que ya se puede construir el diagrama de control con los nuevos valores. El cual es el siguiente:
+
+```{r}
+#| label: fig-ejemplo-dcp2-highcharter
+#| fig-cap: "Diagrama p para la cantidad de piezas con rebaba"
+
+highchart() |>
+  hc_chart(type = "line") |>
+  hc_add_series(
+    datos1_p,
+    type = "line", hcaes(x = muestra, y = lic), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "center", marker = list(enabled = FALSE)
+  ) |>
+  hc_add_series(
+    datos1_p,
+    type = "line", hcaes(x = muestra, y = lc), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>", step = "center",
+    marker = list(enabled = FALSE)
+  ) |>
+  hc_add_series(
+    datos1_p,
+    type = "line", hcaes(x = muestra, y = lsc), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "center", marker = list(enabled = FALSE)
+  ) |>
+  hc_add_series(
+    datos1_p,
+    type = "line", hcaes(x = muestra, y = Di / n),
+    useHTML = TRUE, color = "black", name = "<b><i>p<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    marker = list(
+      symbol = "circle", fillColor = "white", radius = 3,
+      lineWidth = 2, lineColor = "black"
+    )
+  ) |>
+  hc_add_series(
+    data = datos1_p, hcaes(x = muestra, low = lc, high = lsc),
+    step = "center", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, color = "green", name = "",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos1_p, hcaes(x = muestra, low = lic, high = lc),
+    step = "center", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, color = "blue", name = "",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Fracción de piezas con rebada</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE, valueDecimals = 4)
+```
+
+Se observa en la @fig-ejemplo-dcp2-highcharter que eliminando la observación que estuvo fuera de control, el proceso entra en estado bajo control. Por lo que, se concluye que la estimación de $p$ ($\bar{p}=`r formato(p_est)`$) es correcta para la supervisión futura de la producción de piezas con rebada.
+:::
+::::
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dcp-tmv .Example}
+### Aplicación del Diagrama $p$ con Tamaño de Muestra Variable {#sec-ejemplo-diagrama-p-tmv}
+
+<p style="text-align: justify;">
+
+En una empresa del ramo metalmecánico se fabrican válvulas. Después del proceso de fundición se realiza una inspección y las piezas que no cumplen con ciertas características son rechazadas. Las razones del rechazo son diversas: piezas incompletas, porosas, mal formadas, etc. Para evaluar la variabilidad y la magnitud de la proporción de piezas defectuosas en el proceso de fundición se decide implementar una carta $p$. El proceso de fundición se hace por lotes. En la @tbl-datos-dcp-tmv se muestran los datos obtenidos durante una semana para cierto tipo de válvulas. Aunque regularmente el tamaño de lote es fijo, n = 300, en ocasiones, por diferentes motivos, en algunos lotes se hacen unas cuantas piezas de más o de menos.
+
+</p>
+
+```{r}
+#| label: tbl-datos-dcp-tmv
+#| tbl-cap:  "Datos para el diagrama $p$ con tamaño de muestra variables"
+#| tbl-align: left
+
+datos_dpv <- data.table::data.table(
+  muestra = 1:21,
+  ni = c(
+    300L, 300L, 300L, 300L, 300L, 300L, 300L, 280L, 290L, 300,
+    300L, 300L, 300L, 300L, 305L, 295L, 300L, 300L, 300L, 300L,
+    300L
+  ),
+  di = c(
+    15L, 12L,   15L,   7L,   16L,  6L,   18L,  10L,  9L,   15L, 
+    9L,   4L,    7L,   9L,    5L, 15L,   19L,   7L, 12L,   10L, 
+    4L
+  )
+)
+
+p_est <- sum(datos_dpv$di) / sum(datos_dpv$ni)
+
+datos_dpv <- datos_dpv |> 
+  dplyr::mutate(
+    pi = di / ni,
+    desviacion = sqrt(p_est * (1 - p_est) / ni),
+    lic = ifelse(p_est - 3 * desviacion >= 0, p_est - 3 * desviacion, 0),
+    lsc = p_est + 3 * desviacion
+  )
+knitr::kable(
+  datos_dpv,
+  table.attr = 'data-quarto-disable-processing="true"',
+  booktabs = TRUE,
+  format = "markdown",
+  digits = 4,
+  format.args = list(decimal.mark = ",", big.mark = "."),
+  col.names = c(
+    "Número de muestra $i$",
+    "Tamaño de la muestra",
+    "Número de unidades disconformes $D_i$",
+    "Fracción disconforme muestral $\\hat{p}_i$",
+    "Desviación estándar $\\sqrt {\\frac{\\bar{p}(1 - \\bar{p})}{n_i}}$",
+    "Límite inferior de control $LCI_i$",
+    "Límite superior de control $LCS_i$"
+  ),
+  align = "ccccccc",
+  caption = "\\label{tbl-datos-dcp-tmv}Datos para el diagrama $p$ con tamaño de muestra variables",
+  escape = FALSE
+)
+```
+
+La estimación de $p$ se obtiene mediante la siguiente expresión:
+
+$$
+\begin{equation}
+\bar{p}=\frac{\sum_{i=1}^{m}d_i}{\sum_{i=1}^{m}n_i}
+\end{equation}
+$$ {#eq-pestp}
+
+La desviación estandar viene dada por:
+
+$$
+\begin{equation}
+\sqrt{\frac{\bar{p}(1-\bar{p})}{n_i}}
+\end{equation}
+$$ {#eq-desvp}
+
+Los limites de control son calculados mediante las siguientes expresiones:
+
+$$
+\begin{align}
+LCS_i = \bar{p}+3\sqrt{\frac{\bar{p}(1-\bar{p})}{n_i}} \\
+LC = \bar{p} \\ 
+LCI_i = \bar{p}-3\sqrt{\frac{\bar{p}(1-\bar{p})}{n_i}}
+\end{align}
+$$
+
+Se observa en la @tbl-datos-dcp-tmv que las variaciones en los limites de control son mínimas, esto debido a la similitud en los tamaños de muestra. Por ello, resulta más practica la estimación de estos limites utilizando el promedio de los $n$ subgrupos. De la siguiente forma:
+
+```{r}
+#| include: FALSE
+#| label: cp-dcp-lc-dcp-tmv
+
+m <- nrow(datos_dpv)
+n_est <- sum(datos_dpv$ni) / (m)
+ desviacion = sqrt(p_est * (1 - p_est) / round(n_est,0))
+lic_tmp <- ifelse(p_est - 3 * desviacion >= 0, p_est - 3 * desviacion, 0)
+lc <- p_est
+lsc_tmp <- p_est + 3 * desviacion
+```
+
+$$
+\begin{equation}
+\bar{n}=\frac{\sum_{i}^{m}n_i}{m}
+\end{equation}
+$$ {#eq-nest}
+
+Al reemplazar los datos se tiene que:
+
+$$
+\bar{n}=\frac{
+`r datos_dpv[1, 2]` + `r datos_dpv[2, 2]` + \cdots + `r datos_dpv[nrow(datos_np) - 1, 2]` + `r datos_dpv[nrow(datos_np), 2]`}{`r nrow(datos_dpv)`} = `r formato(n_est)`.
+$$
+
+Aproximando al entero más cercano, se tiene que $\bar{n}= `r round(n_est,0)`$
+
+Por lo que ahora se calculan los nuevos limites de control utilizando la @eq-lcp, con la salvedad de que se utiliza $\bar{n}$ como estimador de los $n_i$.
+
+$$
+LCS = `r p_est`+3\sqrt{\frac{`r p_est`(1-`r p_est`)}{`r round(n_est,0)`})} = `r lsc_tmp`
+$$
+
+$$
+LC= `r p_est`=`r lc`
+$$
+
+$$
+LCI = `r p_est`-3\sqrt{\frac{`r p_est`(1-`r p_est`)}{`r round(n_est,0)`})} = `r lic_tmp`
+$$
+
+De modo que, el diagrama de control con los límites calculados sería el siguiente:
+
+```{r}
+#| label: fig-dcp-tmv-highcharter
+#| fig-cap: "Diagrama p para el número de piezas de valvulas defectuosas"
+
+datos_dpv$outlier <- ifelse(
+  datos_dpv$pi < datos_dpv$lic | datos_dpv$pi > datos_dpv$lsc, "Si", "No"
+)
+
+color <- ifelse(
+  datos_dpv$outlier == "No", "#0000FF", "#FF0000" 
+)
+symbol <- ifelse(
+  datos_dpv$outlier == "No", "triangle-up", "triangle-down"
+)
+
+# library(highcharter)
+highchart() |>
+  hc_add_series(
+    datos_dpv,
+    type = "line", hcaes(x = muestra, y = p_est), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>", step = "hv",
+    marker = list(enabled = FALSE)
+  ) |>
+  hc_add_series(
+    datos_dpv,
+    type = "line", hcaes(x = muestra, y = lsc), useHTML = TRUE,
+    color = "red", name = "<b><i>LCS</b></i>", dashStyle = "Dash",
+    step = "hv", marker = list(enabled = FALSE)
+  ) |>
+  hc_add_series(
+    datos_dpv,
+    type = "line", hcaes(x = muestra, y = pi, color = color, symbol = symbol),
+    useHTML = TRUE, color = "black", 
+    name = "<b><i>p<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    marker = list(radius = 3)
+  ) |>
+  hc_add_series(
+    data = datos_dpv, hcaes(x = muestra, low = lsc, high = p_est),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, color = "green", name = "",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos_dpv, hcaes(x = muestra, low = lic, high = p_est),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, color = "blue", name = "",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    datos_dpv,
+    type = "line", hcaes(x = muestra, y = lic), useHTML = TRUE,
+    color = "red", name = "<b><i>LCI</b></i>", dashStyle = "Dash",
+    step = "hv", marker = list(enabled = FALSE)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Fracción de unidades defectuosas (p<sub>i</sub>)</i></b><br>"
+    ),
+    min = 0,
+    max = 0.1
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE, valueDecimals = 4)
+```
+
+Como se puede observar en la @fig-dcp-tmv-highcharter el proceso funciona bajo control. Por lo que a la empresa del ramo metalmecánico que fabrican válvulas las estimaciones realizadas les serviran de base para proximas inspecciones de los lotes de piezas en el proceso de fundición, para evaluar si el proceso sigue o no bajo control.
+:::
+::::
+
+## Diagrama $c$
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dcc .Example}
+### Aplicación del Diagrama $c$ {#sec-ejemplo-diagrama-c}
+
+Con el propósito de analizar la posibilidad de eliminar los estándares de trabajo en un sector de una fábrica, se decide analizar el número de cierto tipo de operaciones que realiza cada trabajador por día y semana. A continuación se muestran los resultados obtenidos en una semana para 14 trabajadores (cada dato corresponde a un trabajador). Calcule los límites de control para una carta c para el número de operaciones por trabajador e interprete los límites que obtenga.
+
+```{r}
+#| label: tbl-datos-ejemplo-dcc
+#| tbl-cap: "Número promedio de operaciones por trabajador por  día y semana"
+#| tbl-cap-align: left
+#| tbl-align: left
+
+datos_c <- tibble(
+  muestra = 1:14,
+  Ci = c(
+    295, 306, 292, 297, 294, 343, 285, 240, 329, 305, 277, 260, 337, 320
+  )
+)
+
+reactable::reactable(
+  datos_c,
+  columns = list(
+    muestra = colDef(header = "Muestra", align = "right"),
+    Ci = colDef(
+      header = "Número promedio de operaciones por trabajador", 
+      align = "right"
+    )
+  ),
+  defaultColDef = colDef(
+    # footer = function(values, name) {
+    #   htmltools::div(name, style = list(fontWeight = 600))
+    # },
+    minWidth = 100,
+    # maxWidth = 200
+  ),
+  fullWidth = TRUE,
+  # width = "100%",
+  # style = list(width = "100%"),
+  resizable = TRUE, 
+  wrap = FALSE, 
+  bordered = TRUE,
+  defaultPageSize = 10,
+  striped = TRUE,
+  highlight = TRUE,
+  filterable = TRUE
+)
+```
+
+La estimación de $c$ se obtiene mediante la siguiente expresión:
+
+$$
+\begin{equation}
+\bar{c}=\hat{c}=\frac{\sum_{i=1}^{m}c_i}{m}
+\end{equation}
+$$ {#eq-pestc}
+
+```{r}
+#| include: FALSE
+c_est <- mean(datos_c$Ci)
+```
+
+Al sustituir los datos de la @tbl-datos-ejemplo-dcc, se tiene: $$
+\hat{c} = \bar{c} = \frac{`r datos_c[1, 2]` + `r datos_c[2, 2]` + \cdots + `r datos_c[nrow(datos_c) - 1, 2]` + `r datos_c[nrow(datos_c), 2]`}{`r m`}=`r c_est`
+$$
+
+La desviación estandar viene dada por:
+
+$$
+\begin{equation}
+\sqrt{\bar{c}}
+\end{equation}
+$$ {#eq-desvc}
+
+Los limites de control son calculados mediante las siguientes expresiones:
+
+$$
+\begin{align}
+LCS_i = \bar{c}+3\sqrt{\bar{c}} \\
+LC = \bar{c} \\ 
+LCI_i = \bar{c}-3\sqrt{\bar{c}}
+\end{align}
+$$ {#eq-lcc}
+
+Reemplazando, se tiene entonces que:
+
+$$
+LCS = `r c_est` + 3\sqrt {`r c_est`} = `r lsc`
+$$
+
+$$
+LC=`r c_est`
+$$
+
+$$
+LCI = `r c_est` - 3\sqrt {`r c_est`} = `r lic`
+$$ Y en la @fig-ejemplo-dcc-highcharter se puede aprecia el diagrama de control para esta serie de datos.
+
+Por otro lado, los parámetros del Diagrama también se calculan en R y se muestra esto en el siguiente bloque de código:
+
+```{r}
+#| label: lci-dcc
+m <- nrow(datos_c)
+lic <- max(0, c_est - 3 * sqrt(c_est))
+lc <- c_est
+lsc <- c_est + 3 * sqrt(c_est)
+paste0("LCI = ", formato(lic), "    LC = ", formato(lc), "    LCS = ", formato(lsc))
+```
+
+El diagrama de control es el siguiente:
+
+```{r}
+#| label: fig-ejemplo-dcc-highcharter
+#| fig-cap: "Diagrama $c$ para el número defectos"
+
+
+datos_c <- datos_c |> 
+  mutate(
+    fc = ifelse(Ci > lsc | Ci < lic, "Si", "No"),
+    color = ifelse(fc == "Si", "#FF0000", "#0000FF"),
+    symbol = ifelse(fc == "Si", "asterisk-open", "circle")
+  )
+
+highchart() |>
+  
+  hc_add_series(
+    data = datos_c, hcaes(x = muestra, low = lc, high = lsc),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos_c, hcaes(x = muestra, low = lic, high = lc),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    datos_c, type = "line", 
+    hcaes(x = muestra, y = lsc), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 4)
+  ) |>
+  hc_add_series(
+    datos_c,
+    type = "line", hcaes(x = muestra, y = lc), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    datos_c, type = "line", hcaes(x = muestra, y = lic), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list( valueDecimals = 0)
+  ) |>
+  hc_add_series(
+    datos_c,
+    type = "line", color = "black",
+    hcaes(
+      x = muestra, y = Ci, color = color, symbol = symbol
+    ),
+    marker = list(
+      radius = 3
+    ),
+    useHTML = TRUE, name = "<b><i>C<sub>i</sub></i></b>",
+    dashStyle = "Dash"
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  
+  hc_yAxis(
+  title = list(
+    useHTML = TRUE,
+    text = "<b><i>Número de operaciones por trabajador (C<sub>i</sub>)</i></b><br>"
+  )
+) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions( series = list(animation = FALSE) )
+```
+
+Como se puede observar en la @fig-ejemplo-dcc-highcharter, se tiene que un punto se encuentra fuera de los limites de control, siendo este asociado al octavo trabajador. Significando que el desempeño de ese trabajador no sigue el comportamiento común del resto, y hay una causa especial de variación que debe ser investigada. Por lo que en primera instancia se debe investigar la causa especial de variación (si es que existe), la cual puede deberse a problemas de salud o fatiga esa semana, recepción de tareas distintas o fue asignado a un diferente, entre otros. Suponiendo que fue investigada y se determina que el trabajador no seguía el proceso estándar, entonces se excluira su dato para recalcular límites de control sin distorsión. Esto ultimo se hace en el siguiente bloque de código en R:
+
+```{r}
+datos_c <- datos_c[-c(8),]
+m <- nrow(datos_c)
+c_est <- mean(datos_c$Ci)
+lic_tmp <- max(0, c_est - 3 * sqrt(c_est))
+lc <- c_est
+lsc_tmp <- c_est + 3 * sqrt(c_est)
+paste0("LCI = ", formato(lic), "    LC = ", formato(lc), "    LCS = ", formato(lsc))
+```
+
+El diagrama de control ahora es el siguiente:
+
+```{r}
+#| label: fig-ejemplo-dcc-highcharter-2
+#| fig-cap: "Diagrama $c$ para el número defectos"
+
+
+datos_c <- datos_c |> 
+  mutate(
+    fc = ifelse(Ci > lsc | Ci < lic, "Si", "No"),
+    color = ifelse(fc == "Si", "#FF0000", "#0000FF"),
+    symbol = ifelse(fc == "Si", "asterisk-open", "circle")
+  )
+
+highchart() |>
+  
+  hc_add_series(
+    data = datos_c, hcaes(x = muestra, low = lc, high = lsc),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos_c, hcaes(x = muestra, low = lic, high = lc),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    datos_c, type = "line", 
+    hcaes(x = muestra, y = lsc), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 4)
+  ) |>
+  hc_add_series(
+    datos_c,
+    type = "line", hcaes(x = muestra, y = lc), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    datos_c, type = "line", hcaes(x = muestra, y = lic), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list( valueDecimals = 0)
+  ) |>
+  hc_add_series(
+    datos_c,
+    type = "line", color = "black",
+    hcaes(
+      x = muestra, y = Ci, color = color, symbol = symbol
+    ),
+    marker = list(
+      radius = 3
+    ),
+    useHTML = TRUE, name = "<b><i>C<sub>i</sub></i></b>",
+    dashStyle = "Dash"
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  
+  hc_yAxis(
+  title = list(
+    useHTML = TRUE,
+    text = "<b><i>Número de operaciones por trabajador (C<sub>i</sub>)</i></b><br>"
+  )
+) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions( series = list(animation = FALSE) )
+```
+
+Como se puede observar ahora en la @fig-ejemplo-dcc-highcharter-2 ya el proceso esta bajo control. Por lo que los estándares de trabajo de la fábrica, se pueden representar bajo los limites establecidos para proximos estudios del número de operaciones que realiza cada trabajador por día y semana.
+:::
+::::
+
+## Diagrama $u$
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dcu .Example}
+### Aplicación del Diagrama $u$
+
+En una fábrica de productos de plástico se tiene el problema de las rugosidades (o marcas de fl ujo) que no su funcionamiento. Con el propósito de analizar la estabilidad del proceso y tratar de localizar causas especiales de variación, se inspeccionan 50 piezas de cada lote de cierto producto. El número de rugosidades encontradas en los lotes producidos en dos semanas se muestra a continuación:
+
+```{r}
+#| label: tbl-datos-ejemplo1-dcu
+#| tbl-cap: "Número de rugosidades encontradas en los lotes producidos en dos semanas"
+#| tbl-cap-align: left
+#| tbl-align: left
+
+datos_u <- tibble(
+  muestra = 1:22,
+  Ci = c(
+    155L, 181L, 158L, 156L, 152L, 188L, 163L, 163L, 170L, 154L, 150L, 188L, 155L, 141L, 163L, 154L, 153L, 167L, 128L, 153L, 129L, 160L
+  ),
+  Ui = c(
+    155L, 181L, 158L, 156L, 152L, 188L, 163L, 163L, 170L, 154L, 150L, 188L, 155L, 141L, 163L, 154L, 153L, 167L, 128L, 153L, 129L, 160L) / 50L
+  )
+
+reactable::reactable(
+  datos_u,
+  columns = list(
+    muestra = colDef(header = "Muestra", align = "right"),
+    Ui = colDef(
+      header = "Número de rugosidades por pieza", 
+      align = "right"
+    )
+  ),
+  defaultColDef = colDef(
+    # footer = function(values, name) {
+    #   htmltools::div(name, style = list(fontWeight = 600))
+    # },
+    minWidth = 100,
+    # maxWidth = 200
+  ),
+  fullWidth = TRUE,
+  # width = "100%",
+  # style = list(width = "100%"),
+  resizable = TRUE, 
+  wrap = FALSE, 
+  bordered = TRUE,
+  defaultPageSize = 10,
+  striped = TRUE,
+  highlight = TRUE,
+  filterable = TRUE
+)
+```
+
+La estimación de $u$ se obtiene mediante la siguiente expresión:
+
+$$
+\begin{equation}
+\bar{u}=\frac{\sum_{i=1}^{m}c_i}{nm}
+\end{equation}
+$$ {#eq-uest}
+
+La desviación estandar viene dada por:
+
+$$
+\begin{equation}
+\sqrt{\frac{\bar{u}}{n}}
+\end{equation}
+$$ {#eq-desvu}
+
+Los limites de control son calculados mediante las siguientes expresiones:
+
+$$
+\begin{align}
+LCS_i = \bar{u}+3\sqrt{\frac{\bar{u}}{n}} \\
+LC = \bar{u} \\ 
+LCI_i = \bar{u}-3\sqrt{\frac{\bar{u}}{n}}
+\end{align}
+$$ {#eq-lcu}
+
+```{r}
+#| label: lci-dcu
+m <- nrow(datos_u)
+n <- 5
+u_est <- mean(datos_u$Ui)
+lic <- max(0, u_est - 3 * sqrt(u_est / n))
+lc <- u_est
+lsc <- u_est + 3 * sqrt(u_est / n)
+paste0("LCI = ", formato(lic), "    LC = ", formato(lc), "    LCS = ", formato(lsc))
+```
+
+Al sustituir los datos de la @tbl-datos-ejemplo1-dcu, se tiene:
+
+$$
+\bar{u} = \frac{`r datos_u[1, 2]` + `r datos_u[2, 2]` + \cdots + `r datos_u[nrow(datos_u) - 1, 2]` + `r datos_u[nrow(datos_u), 2]`}{50 * `r m`}=`r u_est`
+$$ La estimación de $u$ es de `r formato(u_est)`.
+
+La desviación estandar viene dada por: $$
+\sqrt{\frac{`r u_est`}{`r n`}} = `r formato(sqrt(u_est / n))`
+$$ Los limites de control son calculados mediante las siguientes expresiones: $$
+LCS = `r u_est` + 3\sqrt{\frac{`r u_est`}{`r n`}} = `r lsc`
+$$ $$
+LC = `r u_est` = `r lc`
+$$ $$
+LCI = `r u_est` - 3\sqrt{\frac{`r u_est`}{`r n`}} = `r lic`
+$$ El diagrama de control es el siguiente:
+
+```{r}
+#| label: fig-ejemplo-dcu-highcharter
+#| fig-cap: "Diagrama $u$ para el número de rugosidades por pieza"
+
+# library(highcharter)
+highchart() |>
+  hc_add_series(
+    data = datos_u, hcaes(x = muestra, low = lc, high = lsc),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos_u, hcaes(x = muestra, low = lic, high = lc),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    datos_u, type = "line", 
+    hcaes(x = muestra, y = lsc), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    datos_u,
+    type = "line", hcaes(x = muestra, y = lc), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    datos_u, type = "line", hcaes(x = muestra, y = lic), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list( valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    datos_u,
+    type = "line", color = "black",
+    hcaes(
+      x = muestra, y = Ui
+    ),
+    marker = list(
+      radius = 3
+    ),
+    useHTML = TRUE, name = "<b><i>U<sub>i</sub></i></b>",
+    dashStyle = "Dash"
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Tasa de defectos (U<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions( series = list(animation = FALSE) )
+```
+
+Como se puede observar en la @fig-ejemplo-dcu-highcharter, el proceso funciona bajo control. Por lo que a la empresa del ramo plástico que fabrica productos de plástico las estimaciones realizadas les serviran de base para proximas inspecciones de los lotes de piezas en el proceso de producción, para evaluar si el proceso sigue o no bajo control.
+:::
+::::
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dcu-tmv .Example}
+### Aplicación del Diagrama $u$ con Tamaño de Muestra Variable
+
+Se tienen los datos de acabado superficial en rollos de papel blanco, los mismos pueden observarse en la @tbl-datos-ejemplo2-dcu. El gerente de la empresa quiere saber cuántos defectos se encuentran en promedio por cada rollo de papel blanco. Por lo que se requiere aplicar un diagrama de control $u$.
+
+```{r}
+#| label: tbl-datos-ejemplo2-dcu
+#| tbl-cap: "Número de defectos por cada rollo de papel blanco"
+#| tbl-align: left
+
+datos_dutmv <- tibble(
+  muestra = 1:28,
+  ni = c(
+    10L, 10L, 10L, 9L, 10L, 10L, 10L, 8L, 8L, 8L, 12L, 12L, 12L, 10L,
+    10L, 11L, 10L, 10L, 10L, 10L, 10L, 10L, 11L, 10L, 10L, 10L, 9L, 10L 
+  ),
+  Ci = c(
+    45L, 51L, 36L, 48L, 42L, 5L, 33L, 27L, 31L, 22L, 25L, 35L, 32L, 43L,
+    48L, 35L, 39L, 29L, 37L, 33L, 15L, 33L, 27L, 23L, 25L, 41L, 37L, 28L
+  ),
+  Ui = Ci / ni
+)
+
+reactable::reactable(
+  datos_dutmv,
+  columns = list(
+    muestra = colDef(
+      header = "Número de lote", align = "right"
+    ),
+    metros_cuadrados = colDef(
+      header = "Número de metros cuadrados", 
+      align = "right"
+    ),
+    Ci = colDef(
+      header = "Número total de defectos", align = "right"
+    ),
+    ni = colDef(
+      header = "Tamaño de muestra", align = "right",
+      format = colFormat(
+        separators = TRUE, digits = 1, locales = "es-ES"
+      )
+    ),
+    Ui = colDef(
+      header = "Número de defectos por rollo de papel blanco", 
+      align = "right",
+      format = colFormat(
+        separators = TRUE, digits = 4, locales = "es-ES"
+      )
+    )
+  ),
+  defaultColDef = colDef(
+    # footer = function(values, name) {
+    #   htmltools::div(name, style = list(fontWeight = 600))
+    # },
+    minWidth = 100,
+    # maxWidth = 200
+  ),
+  fullWidth = TRUE,
+  # width = "100%",
+  # style = list(width = "100%"),
+  resizable = TRUE, 
+  wrap = FALSE, 
+  bordered = TRUE,
+  defaultPageSize = 10,
+  striped = TRUE,
+  highlight = TRUE,
+  filterable = TRUE
+)
+```
+
+La estimación de $u$ se obtiene mediante la siguiente expresión:
+
+$$
+\begin{equation}
+\bar{u}=\frac{\sum_{i=1}^{m}c_i}{\sum_{i=1}^{m}n_i}
+\end{equation}
+$$ {#eq-pustp}
+
+La desviación estandar viene dada por:
+
+$$
+\begin{equation}
+\sqrt{\frac{\bar{u}}{n_i}}
+\end{equation}
+$$
+
+Los limites de control son calculados mediante las siguientes expresiones:
+
+$$
+\begin{align}
+LCS_i = \bar{u}+3\sqrt{\frac{\bar{u}}{n_i}} \\
+LC = \bar{u} \\ 
+LCI_i = \bar{u}-3\sqrt{\frac{\bar{u}}{n_i}}
+\end{align}
+$$
+
+Se observa en la @tbl-datos-ejemplo2-dcu que existe una similitud en los tamaños de muestra. Por ello, resulta más practica la estimación de estos limites utilizando el promedio de los $n$ subgrupos. Por lo que se utiliza la @eq-nest como se hizo con el @exm-dcp-tmv.
+
+```{r}
+#| include: FALSE
+#| label: cp-dcu-tmv
+
+m <- nrow(datos_dutmv)
+n_est <-sum(datos_dutmv$ni)  / m
+```
+
+Al reemplazar los datos se tiene que:
+
+$$
+\bar{n}=\frac{
+`r datos_dutmv$ni[1]` + `r datos_dutmv$ni[2]` + \cdots + `r datos_dutmv$ni[nrow(datos_dutmv)-1]` + `r datos_dutmv$ni[nrow(datos_dutmv)]`}{`r nrow(datos_dutmv)`} = `r round(n_est, 0)`.
+$$
+
+Por lo que ahora se calculan los nuevos limites de control utilizando la @eq-lcp, con la salvedad de que se utiliza $\bar{n}$ como estimador de los $n_i$.
+
+```{r}
+#| label: lc-dc-tmv
+u_est <- sum(datos_dutmv$Ci) / sum(datos_dutmv$ni)
+desviacion = sqrt(u_est / round(n_est,0))
+
+lic_tmp <-  max(u_est - 3 * desviacion, 0)
+lc <- u_est
+lsc_tmp <- u_est + 3 * desviacion
+
+# AÑADIMOS LAS COLUMNAS AL DATAFRAME
+datos_dutmv$lsc <- lsc_tmp
+datos_dutmv$lic <- lic_tmp
+datos_dutmv$u_est <- u_est
+```
+
+$$
+LCS = `r u_est`+3\sqrt{\frac{`r u_est`}{`r round(n_est,0)`})} = `r lsc_tmp`
+$$
+
+$$
+LC= `r u_est`=`r lc`
+$$
+
+$$
+LCI = `r u_est`-3\sqrt{\frac{`r u_est`}{`r round(n_est,0)`})} = `r lic_tmp`
+$$ De modo que, el diagrama de control con los límites calculados sería el siguiente:
+
+```{r}
+#| label: fig-ejemplo-dutmv-highcharter
+#| fig-cap: "Diagrama $u$ para el número de defectos por cada rollo de papel blanco"
+
+highchart() |>
+  # Área entre LCI y LC (azul)
+  hc_add_series(
+    data = datos_dutmv, 
+    hcaes(x = muestra, low = lic, high = u_est),  # Corregido: orden correcto
+    type = "arearange", 
+    fillOpacity = 0.2, 
+    color = "lightblue",
+    name = "Zona control"
+  ) |>
+  # Área entre LC y LCS (verde)
+  hc_add_series(
+    data = datos_dutmv, 
+    hcaes(x = muestra, low = u_est, high = lsc),  # Corregido: orden correcto
+    type = "arearange", 
+    fillOpacity = 0.2, 
+    color = "lightgreen",
+    showInLegend = FALSE
+  ) |>
+  # Línea LCS
+  hc_add_series(
+    datos_dutmv, 
+    type = "line", 
+    hcaes(x = muestra, y = lsc), 
+    color = "red", 
+    dashStyle = "Dash", 
+    name = "LCS",
+    marker = list(enabled = FALSE)
+  ) |>
+  # Línea central
+  hc_add_series(
+    datos_dutmv,
+    type = "line", 
+    hcaes(x = muestra, y = u_est), 
+    color = "blue", 
+    name = "LC",
+    marker = list(enabled = FALSE)
+  ) |>
+  # Línea LCI
+  hc_add_series(
+    datos_dutmv, 
+    type = "line", 
+    hcaes(x = muestra, y = lic), 
+    color = "red", 
+    dashStyle = "Dash", 
+    name = "LCI",
+    marker = list(enabled = FALSE)
+  ) |>
+  # Puntos de datos Ui
+  hc_add_series(
+    datos_dutmv,
+    type = "line", 
+    hcaes(x = muestra, y = Ui),
+    color = "black",
+    name = "U<sub>i</sub>",
+    marker = list(radius = 4, symbol = "circle")
+  ) |>
+  hc_xAxis(title = list(text = "Muestra")) |>
+  hc_yAxis(title = list(text = "Defectos por unidad (u<sub>i</sub>)")) |>
+  hc_tooltip(
+    headerFormat = "Muestra {point.x}<br/>",
+    pointFormat = "{series.name}: {point.y:.4f}"
+  ) |>
+  hc_legend(enabled = TRUE)
+```
+
+Se puede observar que en la @fig-ejemplo-dutmv-highcharter el proceso se encuentra fuera control, ya que existen cuatro puntos fuera de los limites de control. Por lo que se sugiere investigar las causas de los defectos en los rollos de papel blanco, para poder tomar acciones correctivas y evitar que el proceso siga fuera de control.Por consiguiente, supondiendo causas atribuibles se sugiere su exclusión con el fin de establecer una estimación de $u$ que ayude a supervisar las producciones futuras, el diagrama debe ser recalculado a partir de la estimación de $u$, utilizando la @eq-desvu, eliminando esta observación como se puede observar en R:
+
+```{r}
+datos_dutmv <- datos_dutmv[-c(2,4,6,21),]
+
+u_est <- sum(datos_dutmv$Ci) / sum(datos_dutmv$ni)
+desviacion = sqrt(u_est / round(n_est,0))
+
+lic_tmp <-  max(u_est - 3 * desviacion, 0)
+lc <- u_est
+lsc_tmp <- u_est + 3 * desviacion
+
+# AÑADIMOS LAS COLUMNAS AL DATAFRAME
+datos_dutmv$lsc <- lsc_tmp
+datos_dutmv$lic <- lic_tmp
+datos_dutmv$u_est <- u_est
+
+```
+
+```{r}
+#| label: fig-ejemplo-dutmv2-highcharter
+#| fig-cap: "Diagrama $u$ para el número de defectos por cada rollo de papel blanco"
+
+highchart() |>
+  # Área entre LCI y LC (azul)
+  hc_add_series(
+    data = datos_dutmv, 
+    hcaes(x = muestra, low = lic, high = u_est),  # Corregido: orden correcto
+    type = "arearange", 
+    fillOpacity = 0.2, 
+    color = "lightblue",
+    name = "Zona control"
+  ) |>
+  # Área entre LC y LCS (verde)
+  hc_add_series(
+    data = datos_dutmv, 
+    hcaes(x = muestra, low = u_est, high = lsc),  # Corregido: orden correcto
+    type = "arearange", 
+    fillOpacity = 0.2, 
+    color = "lightgreen",
+    showInLegend = FALSE
+  ) |>
+  # Línea LCS
+  hc_add_series(
+    datos_dutmv, 
+    type = "line", 
+    hcaes(x = muestra, y = lsc), 
+    color = "red", 
+    dashStyle = "Dash", 
+    name = "LCS",
+    marker = list(enabled = FALSE)
+  ) |>
+  # Línea central
+  hc_add_series(
+    datos_dutmv,
+    type = "line", 
+    hcaes(x = muestra, y = u_est), 
+    color = "blue", 
+    name = "LC",
+    marker = list(enabled = FALSE)
+  ) |>
+  # Línea LCI
+  hc_add_series(
+    datos_dutmv, 
+    type = "line", 
+    hcaes(x = muestra, y = lic), 
+    color = "red", 
+    dashStyle = "Dash", 
+    name = "LCI",
+    marker = list(enabled = FALSE)
+  ) |>
+  # Puntos de datos Ui
+  hc_add_series(
+    datos_dutmv,
+    type = "line", 
+    hcaes(x = muestra, y = Ui),
+    color = "black",
+    name = "U<sub>i</sub>",
+    marker = list(radius = 4, symbol = "circle")
+  ) |>
+  hc_xAxis(title = list(text = "Muestra")) |>
+  hc_yAxis(title = list(text = "Defectos por unidad (u<sub>i</sub>)")) |>
+  hc_tooltip(
+    headerFormat = "Muestra {point.x}<br/>",
+    pointFormat = "{series.name}: {point.y:.4f}"
+  ) |>
+  hc_legend(enabled = TRUE)
+```
+
+Como se puede observar en la @fig-ejemplo-dutmv2-highcharter todos los puntos se encuentran dentro de los limites. Por lo que el proceso se encuentra bajo control y el gerente de la empresa ya puede saber cuántos defectos que al encontrarse en promedio por cada rollo de papel blanco le permiten mantener la calidad del de acabado superficial en rollos de papel blanco.
+:::
+::::
+
+## Referencias
