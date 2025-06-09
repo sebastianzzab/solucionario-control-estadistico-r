@@ -225,7 +225,7 @@ Una vez determinado los límites de control ya es posible realizar el grafico de
 
 ```{r}
 #| label: fig-ejemplo-dcnp-highcharter
-#| fig-cap: "Diagrama $np$ para el numero de artículos defectuosos"
+#| fig-cap: "Diagrama $np$ para el número de componentes k12 defectuosos"
 
 highchart() |>
   hc_add_series(
@@ -288,9 +288,7 @@ highchart() |>
 ```
 
 <p style="text-align: justify;">
-
-De la @fig-ejemplo-dcnp-highcharter se aprecia que el proceso no funcionó de manera estable, ya que el número de piezas defectuosas en la muestra del lote 12 es mayor que el límite superior; mientras que en la muestra del lote 16 el número de defectuosos es menor que el límite inferior. De aquí que se tenga una evidencia objetiva para afirmar que en la fabricación del lote 12 se presentó una causa o situación especial que normalmente no está presente en el proceso y que lo empeoró de forma seria; mientras que en el lote 16 ocurrió una causa especial que mejoró el desempeño del proceso de fabricación de componentes k12. Es necesario localizar ambas causas, ya que así se estará en posibilidades de prevenir la primera, y en caso de no haber un error en el registro de los datos, fomentar la segunda. Con el fin de establecer una estimación de $p$ que ayude a supervisar las producciones futuras, el diagrama debe ser recalculado a partir de la estimación de $p$, utilizando la @eq-pestnp, eliminando estas observaciones.
-
+De la @fig-ejemplo-dcnp-highcharter se aprecia que el proceso no funcionó de manera estable, ya que el número de piezas defectuosas en la muestra del lote 12 es mayor que el límite superior; mientras que en la muestra del lote 16 el número de defectuosos es menor que el límite inferior. De aquí que se tenga una evidencia objetiva para afirmar que en la fabricación del lote 12 se presentó una causa o situación especial que normalmente no está presente en el proceso y que lo empeoró de forma seria; mientras que en el lote 16 ocurrió una causa especial que mejoró el desempeño del proceso de fabricación de componentes k12. Es necesario localizar ambas causas, ya que así se estará en posibilidades de prevenir la primera, y en caso de no haber un error en el registro de los datos, fomentar la segunda. Con el fin de establecer una estimación de $p$ que ayude a supervisar las producciones futuras, el diagrama debe ser recalculado a partir de la estimación de $p$, utilizando la @eq-pestnp, eliminando estas observaciones suponiendo como se menciona anteriormente, que tienen causas atribuibles.
 </p>
 
 ```{r}
@@ -312,7 +310,7 @@ Al eliminar estas observaciones la nueva estimación de $p$ sería $`r formato(p
 
 ```{r}
 #| label: fig-ejemplo-dcnp2-highcharter
-#| fig-cap: "Diagrama $np$ para el numero de artículos defectuosos"
+#| fig-cap: "Diagrama $np$ para el número de componentes k12 defectuosos"
 
 highchart() |>
   hc_add_series(
@@ -374,7 +372,7 @@ highchart() |>
   hc_plotOptions( series = list(animation = FALSE) )
 ```
 
-Se observa em @fig-ejemplo-dcnp2-highcharter que eliminando las observaciones que estuvieron fuera de control, el proceso entra en estado bajo control. Por lo que, se concluye que la estimación de $p$ ($\bar{p}=`r formato(p_est)`$) es correcta para la supervisión futura de la producción de de componentes k12. 
+Se observa en la @fig-ejemplo-dcnp2-highcharter que eliminando las observaciones que estuvieron fuera de control, el proceso entra en estado bajo control. Por lo que, se concluye que la estimación de $p$ ($\bar{p}=`r formato(p_est)`$) es correcta para la supervisión futura de la producción de de componentes k12. 
 :::
 ::::
 
@@ -452,7 +450,7 @@ reactable::reactable(
 )
 ```
 
-Se requieren los parametros para construir el diagrama de control. Nuevamente como no se tiene conocimiento sobre los parametros del proceso se tienen que estimar. Nuevamente se estima $p$ a traves de $\hat{p}$ a través de la @eq-pestnp. Cuyo resultado con R es el siguiente:
+Se requieren los parametros para construir el diagrama de control. Nuevamente como no se tiene conocimiento sobre los parametros del proceso se tienen que estimar. Nuevamente se estima $p$ a través de $\hat{p}$ con la @eq-pestnp. Cuyo resultado con R es el siguiente:
 
 ```{r}
 #| label: p-est-dcp-1
@@ -487,7 +485,7 @@ Una vez calculado los limites de control ya es posible realizar el diagrama. El 
 
 ```{r}
 #| label: fig-ejemplo-dcp-highcharter
-#| fig-cap: "Diagrama p para la cantidad de piezas con rebaba"
+#| fig-cap: "Diagrama $p$ para la cantidad de piezas con rebaba"
 
 highchart() |>
   hc_chart(type = "line") |>
@@ -540,7 +538,7 @@ highchart() |>
   hc_yAxis(
     title = list(
       useHTML = TRUE,
-      text = "<b><i>Fracción de de piezas con rebasa</i></b><br>"
+      text = "<b><i>Fracción de de piezas con rebaba</i></b><br>"
     )
   ) |>
   hc_tooltip(crosshairs = TRUE, shared = TRUE, valueDecimals = 4)
@@ -553,7 +551,7 @@ Como se puede observar en la @fig-ejemplo-dcp-highcharter, se encuentra un punto
 #| tbl-align: left
 
 datos1_p <- datos1_p[-c(17),]
-
+m <- nrow(datos1_p)
 p_est <- sum(datos1_p$Di) / (n * m)
 
 lic_tmp <- max(0,p_est - 3 * sqrt(p_est * (1 - p_est)/ n))
@@ -566,7 +564,7 @@ La nueva estimación de $p$ sería $`r formato(p_est)`$ y los limites de control
 
 ```{r}
 #| label: fig-ejemplo-dcp2-highcharter
-#| fig-cap: "Diagrama p para la cantidad de piezas con rebaba"
+#| fig-cap: "Diagrama $p$ para la cantidad de piezas con rebaba"
 
 highchart() |>
   hc_chart(type = "line") |>
@@ -634,14 +632,12 @@ Se observa en la @fig-ejemplo-dcp2-highcharter que eliminando la observación qu
 ### Aplicación del Diagrama $p$ con Tamaño de Muestra Variable {#sec-ejemplo-diagrama-p-tmv}
 
 <p style="text-align: justify;">
-
 En una empresa del ramo metalmecánico se fabrican válvulas. Después del proceso de fundición se realiza una inspección y las piezas que no cumplen con ciertas características son rechazadas. Las razones del rechazo son diversas: piezas incompletas, porosas, mal formadas, etc. Para evaluar la variabilidad y la magnitud de la proporción de piezas defectuosas en el proceso de fundición se decide implementar una carta $p$. El proceso de fundición se hace por lotes. En la @tbl-datos-dcp-tmv se muestran los datos obtenidos durante una semana para cierto tipo de válvulas. Aunque regularmente el tamaño de lote es fijo, n = 300, en ocasiones, por diferentes motivos, en algunos lotes se hacen unas cuantas piezas de más o de menos.
-
 </p>
 
 ```{r}
 #| label: tbl-datos-dcp-tmv
-#| tbl-cap:  "Datos para el diagrama $p$ con tamaño de muestra variables"
+#| tbl-cap:  "Cantidad de piezas de válvulas rechazadas por cada lote"
 #| tbl-align: left
 
 datos_dpv <- data.table::data.table(
@@ -684,12 +680,11 @@ knitr::kable(
     "Límite superior de control $LCS_i$"
   ),
   align = "ccccccc",
-  caption = "\\label{tbl-datos-dcp-tmv}Datos para el diagrama $p$ con tamaño de muestra variables",
   escape = FALSE
 )
 ```
 
-La estimación de $p$ se obtiene mediante la siguiente expresión:
+Al no tener el mismo tamaño de muestra entre lotes, laa estimación de $p$ se obtiene mediante la siguiente expresión:
 
 $$
 \begin{equation}
@@ -715,7 +710,7 @@ LCI_i = \bar{p}-3\sqrt{\frac{\bar{p}(1-\bar{p})}{n_i}}
 \end{align}
 $$
 
-Se observa en la @tbl-datos-dcp-tmv que las variaciones en los limites de control son mínimas, esto debido a la similitud en los tamaños de muestra. Por ello, resulta más practica la estimación de estos limites utilizando el promedio de los $n$ subgrupos. De la siguiente forma:
+Se observa en la @tbl-datos-dcp-tmv que las variaciones en los limites de control son mínimas, esto debido a la similitud en los tamaños de muestra. Por ello, resulta más practica la estimación de estos limites utilizando el **promedio de los $n$ subgrupos**. De la siguiente forma:
 
 ```{r}
 #| include: FALSE
@@ -762,7 +757,7 @@ De modo que, el diagrama de control con los límites calculados sería el siguie
 
 ```{r}
 #| label: fig-dcp-tmv-highcharter
-#| fig-cap: "Diagrama p para el número de piezas de valvulas defectuosas"
+#| fig-cap: "Diagrama $p$ para el número de piezas de valvulas defectuosas"
 
 datos_dpv$outlier <- ifelse(
   datos_dpv$pi < datos_dpv$lic | datos_dpv$pi > datos_dpv$lsc, "Si", "No"
@@ -824,7 +819,7 @@ highchart() |>
   hc_yAxis(
     title = list(
       useHTML = TRUE,
-      text = "<b><i>Fracción de unidades defectuosas (p<sub>i</sub>)</i></b><br>"
+      text = "<b><i>Fracción de piezas defectuosas (p<sub>i</sub>)</i></b><br>"
     ),
     min = 0,
     max = 0.1
@@ -832,7 +827,7 @@ highchart() |>
   hc_tooltip(crosshairs = TRUE, shared = TRUE, valueDecimals = 4)
 ```
 
-Como se puede observar en la @fig-dcp-tmv-highcharter el proceso funciona bajo control. Por lo que a la empresa del ramo metalmecánico que fabrican válvulas las estimaciones realizadas les serviran de base para proximas inspecciones de los lotes de piezas en el proceso de fundición, para evaluar si el proceso sigue o no bajo control.
+Como se puede observar en la @fig-dcp-tmv-highcharter el proceso funciona bajo control. Por lo que a la empresa del ramo metalmecánico que fabrican válvulas las estimaciones realizadas les serviran de base para proximas inspecciones de los lotes de piezas en el proceso de fundición, para evaluar si el proceso sigue bajo control.
 :::
 ::::
 
@@ -848,7 +843,7 @@ Con el propósito de analizar la posibilidad de eliminar los estándares de trab
 
 ```{r}
 #| label: tbl-datos-ejemplo-dcc
-#| tbl-cap: "Número promedio de operaciones por trabajador por  día y semana"
+#| tbl-cap: "Número promedio de operaciones por trabajador por día y semana"
 #| tbl-cap-align: left
 #| tbl-align: left
 
@@ -1120,7 +1115,7 @@ Como se puede observar ahora en la @fig-ejemplo-dcc-highcharter-2 ya el proceso 
 
 ## Diagrama $u$
 
-El diagrama $u$ permite monitorear el número promedio de defectos por unidad en un proceso de producción. es especialmente útil cuando el tamaño de las muestras varía, lo que permite un análisis más flexible y adaptado a diferentes situaciones de producción. Permite a las organizaciones evaluar la calidad de sus productos al registrar el número promedio de defectos por unidad, incluso cuando el tamaño de las muestras no es constante.
+El diagrama $u$ permite monitorear el número promedio de defectos por unidad en un proceso de producción es especialmente útil cuando el tamaño de las muestras varía, lo que permite un análisis más flexible y adaptado a diferentes situaciones de producción. Permite a las organizaciones evaluar la calidad de sus productos al registrar el número promedio de defectos por unidad, incluso cuando el tamaño de las muestras no es constante.
 
 :::: {.callout-tip icon="false" appearance="simple"}
 ::: {#exm-dcu .Example}
@@ -1200,6 +1195,7 @@ $$ {#eq-lcu}
 
 ```{r}
 #| label: lci-dcu
+#| include: FALSE
 m <- nrow(datos_u)
 n <- 5
 u_est <- mean(datos_u$Ui)
@@ -1416,14 +1412,14 @@ Por lo que ahora se calculan los nuevos limites de control utilizando la @eq-lcp
 u_est <- sum(datos_dutmv$Ci) / sum(datos_dutmv$ni)
 desviacion = sqrt(u_est / round(n_est,0))
 
-lic_tmp <-  max(u_est - 3 * desviacion, 0)
+lic <-  max(u_est - 3 * desviacion, 0)
 lc <- u_est
-lsc_tmp <- u_est + 3 * desviacion
+lsc <- u_est + 3 * desviacion
 
 # AÑADIMOS LAS COLUMNAS AL DATAFRAME
-datos_dutmv$lsc <- lsc_tmp
-datos_dutmv$lic <- lic_tmp
-datos_dutmv$u_est <- u_est
+#datos_dutmv$lsc <- lsc_tmp
+#datos_dutmv$lic <- lic_tmp
+#datos_dutmv$u_est <- u_est
 ```
 
 $$
@@ -1516,14 +1512,14 @@ datos_dutmv <- datos_dutmv[-c(2,4,6,21),]
 u_est <- sum(datos_dutmv$Ci) / sum(datos_dutmv$ni)
 desviacion = sqrt(u_est / round(n_est,0))
 
-lic_tmp <-  max(u_est - 3 * desviacion, 0)
+lic <-  max(u_est - 3 * desviacion, 0)
 lc <- u_est
-lsc_tmp <- u_est + 3 * desviacion
+lsc <- u_est + 3 * desviacion
 
 # AÑADIMOS LAS COLUMNAS AL DATAFRAME
-datos_dutmv$lsc <- lsc_tmp
-datos_dutmv$lic <- lic_tmp
-datos_dutmv$u_est <- u_est
+#datos_dutmv$lsc <- lsc_tmp
+#datos_dutmv$lic <- lic_tmp
+#datos_dutmv$u_est <- u_est
 
 ```
 
