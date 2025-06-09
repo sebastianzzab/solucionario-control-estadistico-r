@@ -64,7 +64,7 @@ knitr::write_bib(
     .packages(), "knitr", "tidyverse", "qcc", "ggQC", "plotly",
     "highcharter", "kableExtra", "data.table", "pacman",
     "renv", "pammtools", "htmlwidgets", "htmltools", "data.table",
-    "RColorBrewer"
+    "RColorBrewer", "latex2exp", "tinytex", "reactable"
   ),
   "packages.bib"
 )
@@ -100,7 +100,10 @@ formato <- function(x, digits = 4) {
 
 <p style="text-align: justify;">
 
-Este documento es un solucionario de ejercicios de **Control Estadístico de la Calidad**, correspondiente a la asignatura del mismo nombre dictada en la Universidad de Oriente, Núcleo Nueva Esparta, por el profesor Oswaldo Bello.
+Este solucionario ha sido elaborado con base en los contenidos presentados en el libro *Control Estadístico de la Calidad*, desarrollado por el profesor **Oswaldo Bello** como material de apoyo para la asignatura del mismo nombre en la Universidad de Oriente, Núcleo Nueva Esparta.
+
+El libro está disponible en línea en el siguiente enlace:  
+🔗 [https://oswaldobelloc.github.io/libro_cec/](https://oswaldobelloc.github.io/libro_cec/)
 
 Fue desarrollado por estudiantes de la carrera de Licenciatura en Estadística utilizando Quarto. Contiene ejemplos de los principales diagramas de control para atributos (`np`, `p`, `c`, `u`), aplicados con el lenguaje de programación R. Cada gráfico fue generado con el paquete `highcharter`, por su capacidad de generar visualizaciones interactivas y atractivas.
 
@@ -109,6 +112,9 @@ Este material tiene fines tanto evaluativos como educativos, sirviendo de guía 
 </p>
 
 ## Diagrama $np$
+
+El diagrama $np$ se utiliza para monitorear el número de unidades defectuosas en un proceso de producción. Se aplica específicamente cuando el tamaño de la muestra es constante, permitiendo a los analistas observar la variabilidad en el número de defectos a lo largo del tiempo.
+
 
 :::: {.callout-tip icon="false" appearance="simple"}
 ::: {#exm-dcnp .Example}
@@ -374,6 +380,9 @@ Se observa em @fig-ejemplo-dcnp2-highcharter que eliminando las observaciones qu
 ::::
 
 ## Diagrama $p$
+
+El diagrama $p$ muestra las variaciones en la proporción de artículos defectuosos por muestra o subgrupo. Es ampliamente usada para evaluar el desempeño de una parte o de todo un proceso, tomando en cuenta su variabilidad con el propósito de detectar causas o cambios especiales en el proceso.
+
 
 :::: {.callout-tip icon="false" appearance="simple"}
 ::: {#exm-dcp .Example}
@@ -830,6 +839,8 @@ Como se puede observar en la @fig-dcp-tmv-highcharter el proceso funciona bajo c
 
 ## Diagrama $c$
 
+El diagrama $c$ analiza la variabilidad del número de defectos en un proceso. Se aplica específicamente cuando el tamaño de la muestra o subgrupo se mantiene constante. permite visualizar y monitorear el número de defectos encontrados al inspeccionar unidades de producto o servicio, ayudando a identificar tendencias o variaciones en el proceso de producción.
+
 :::: {.callout-tip icon="false" appearance="simple"}
 ::: {#exm-dcc .Example}
 ### Aplicación del Diagrama $c$ {#sec-ejemplo-diagrama-c}
@@ -1109,6 +1120,8 @@ Como se puede observar ahora en la @fig-ejemplo-dcc-highcharter-2 ya el proceso 
 ::::
 
 ## Diagrama $u$
+
+El diagrama $u$ permite monitorear el número promedio de defectos por unidad en un proceso de producción. es especialmente útil cuando el tamaño de las muestras varía, lo que permite un análisis más flexible y adaptado a diferentes situaciones de producción. Permite a las organizaciones evaluar la calidad de sus productos al registrar el número promedio de defectos por unidad, incluso cuando el tamaño de las muestras no es constante.
 
 :::: {.callout-tip icon="false" appearance="simple"}
 ::: {#exm-dcu .Example}
@@ -1588,5 +1601,7 @@ highchart() |>
 Como se puede observar en la @fig-ejemplo-dutmv2-highcharter todos los puntos se encuentran dentro de los limites. Por lo que el proceso se encuentra bajo control y el gerente de la empresa ya puede saber cuántos defectos que al encontrarse en promedio por cada rollo de papel blanco le permiten mantener la calidad del de acabado superficial en rollos de papel blanco.
 :::
 ::::
+
+
 
 ## Referencias
