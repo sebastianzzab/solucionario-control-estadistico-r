@@ -1,0 +1,15 @@
+# Introducción
+
+En el competitivo panorama industrial del siglo XXI, la calidad ha dejado de ser una ventaja para convertirse en un requisito indispensable. El Control Estadístico de Procesos (CEP) emerge como una filosofía y un conjunto de herramientas estadísticas que permiten a las organizaciones monitorear, controlar y mejorar sus procesos de producción, pasando de una detección de fallas reactiva a una prevención proactiva.
+
+Este libro se enfoca en dos de los pilares fundamentales del CEP: los diagramas de control para variables y el análisis de la capacidad del proceso. Se abordan en detalle los diagramas más comunes, como los de medias y rangos $(\bar{X}−R)$ y los de medias y desviación estándar $(\bar{X}-S)$, que son esenciales para evaluar la estabilidad y variabilidad de un proceso a lo largo del tiempo. Posteriormente, se profundiza en el cálculo e interpretación de los índices de capacidad $(C_p)$ y capacidad ajustada $(C_{pk})$, métricas cruciales que nos indican si un proceso estable es capaz de cumplir con las especificaciones de diseño establecidas por el cliente.
+
+La principal característica de esta obra es su enfoque eminentemente práctico, utilizando el lenguaje de programación R como única herramienta computacional. R, por ser un software libre, potente y el estándar de facto en la comunidad científica y estadística, ofrece un entorno ideal para la implementación de estas técnicas. 💻 A lo largo de los capítulos, el lector encontrará:
+
+El planteamiento detallado de cada problema.
+
+El código en R, comentado paso a paso, para realizar los cálculos y generar los gráficos.
+
+La interpretación de los resultados: ¿Está el proceso bajo control estadístico? ¿Es capaz de cumplir las especificaciones? ¿Qué decisiones se deben tomar?
+
+Este material está dirigido a estudiantes de ingeniería y ciencias que cursen asignaturas de control de calidad, así como a profesionales que deseen una guía práctica para implementar estas herramientas estadísticas utilizando un software moderno y de alta demanda.

@@ -1,0 +1,52 @@
+/* styles.css */
+
+/* Reglas generales para bloques de código */
+pre, code {
+  max-width: 100%; /* Asegura que no exceda el ancho del contenedor padre */
+  overflow-x: auto; /* Añade barra de desplazamiento horizontal si el contenido es demasiado ancho */
+  box-sizing: border-box; /* Incluye padding y border en el ancho total */
+}
+
+/* Reglas específicas para bloques de código y salida generados por Pandoc/Quarto */
+div.sourceCode,
+div.cell-output div.sourceCode,
+pre.r,
+pre.python,
+pre.chunk { /* Añadido pre.chunk por si acaso */
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+  word-wrap: break-word; /* Rompe palabras largas si es necesario (útil para la salida) */
+  white-space: pre-wrap; /* Permite que el texto se envuelva, preservando espacios y saltos de línea */
+  /* Opcional: Reducir ligeramente el tamaño de la fuente si el código es muy denso */
+  /* font-size: 0.9em; */
+}
+
+/* Asegurarse de que el contenedor de los chunks también respete el ancho */
+.cell-code,
+.cell-output {
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+/* Puede que necesites ajustar los márgenes de los contenedores para dar más espacio */
+body {
+  padding-left: 20px; /* Ajusta según sea necesario */
+  padding-right: 20px; /* Ajusta según sea necesario */
+}
+
+/* Contenedor principal de la página (content) */
+.quarto-page-content {
+  max-width: 100%; /* Asegura que el contenido de la página no exceda el ancho */
+  padding-left: var(--quarto-margin-left, 1rem);
+  padding-right: var(--quarto-margin-right, 1rem);
+  box-sizing: border-box;
+}
+
+/* Ajustes para el contenedor de la sección principal si la plantilla lo tiene */
+.section-body {
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}

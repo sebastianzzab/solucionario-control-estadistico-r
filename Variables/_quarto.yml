@@ -1,0 +1,74 @@
+project:
+  type: book
+
+book:
+  title: "Diagramas de Control para Variables y Análisis de Indices de Capacidad de Procesos Aplicados con ${\\color{Blue} \\textbf{\\textsf{R}}}$"
+  abstract: El presente trabajo compila un conjunto de soluciones a ejercicios sobre Control Estadístico de Procesos (CEP), enfocándose en los diagramas de control por variables y el análisis de capacidad de procesos. La metodología principal es la implementación de estas técnicas mediante el uso del lenguaje de programación R, aprovechando su potencial para el cálculo computacional y la visualización de datos. Cada ejercicio demuestra el procedimiento completo, desde la estructuración de los datos hasta la generación de gráficos y el cálculo de índices, culminando con la interpretación de los resultados para la toma de decisiones. Desarrollado en el marco de la asignatura Control Estadístico de la Calidad de la Universidad de Oriente, este compendio sirve como una guía de referencia práctica que conecta la teoría estadística con su aplicación moderna, facilitando el aprendizaje y la implementación del CEP.
+  author:
+  - name: Sebastian Zabala
+    email: sebastianzabalaza@gmail.com
+    affiliations:
+      - name: Universidad de Oriente, Venezuela
+        city: Cumaná
+        state: Sucre
+  - name: Andrea Rodriguez
+    email: andrea1d137@gmail.com     
+  - name: Victor Requena
+    email: vdrg72003@gmail.com
+  date: now
+  chapters:
+    - index.qmd
+    - introduccion.qmd
+    - variables_indices_cap.qmd
+    - referencias.qmd
+
+bibliography: references.bib
+nocite: |
+  @*
+  
+format:
+  html:
+    author-title: AUTOR
+    # title-block-banner: true
+    # block-banner-color: "#FFDDFF"
+    highlight-style: github
+    code-copy: true
+    code-summary: "Código"
+    # code-tools:
+    #   source: repo
+    code-block-bg: true
+    code-block-border-left: "#31BAE9"
+    code-block-border-left-size: 3px
+    callout-border-width: 1px
+    code-overflow: scroll
+    # default-image-extension: svg
+    html-math-method: mathjax
+    number-sections: true
+    number-depth: 4
+    code-fold: true
+    toc: true
+    toc-depth: 4
+    toc-location: right
+    toc-title: Contenido
+    css: styles.css
+    html:
+      toc-title: Contenido
+    # cover-image: zonas.png
+    # favicon: logo.png
+    # include-in-header:
+    #   - text: |
+    #       <script src="https://examples.org/demo.js"></script>
+    #   - file: logo.png
+    #   - comments.html
+    theme:
+      - cosmo
+    code-line-numbers: true
+    # code-link: true
+
+  pdf:
+    documentclass: scrreprt
+
+editor: visual
+
+lang: es-ES
+

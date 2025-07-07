@@ -1,0 +1,7 @@
+# Prefacio {.unnumbered}
+
+El presente trabajo nació de la necesidad de conectar la teoría del Control Estadístico de la Calidad con la práctica computacional moderna. Durante mi tránsito por la asignatura de Control Estadístico de la Calidad, dictada por el profesor Oswaldo Bello en nuestra casa de estudios, la Universidad de Oriente, Núcleo Nueva Esparta, comprendí que la aplicación manual de fórmulas es fundamental para entender los conceptos, pero el verdadero poder de estas herramientas se desata cuando se combinan con la eficiencia de un lenguaje de programación como R.
+
+Este solucionario no es solo una colección de ejercicios resueltos; es el reflejo de un proceso de aprendizaje. Es la bitácora de mi viaje para traducir los principios de los diagramas de control y los índices de capacidad a un código funcional, reproducible y visualmente potente. Cada script, cada gráfico y cada interpretación representa un puente entre la fórmula en la pizarra y el análisis de datos real que enfrentaremos en el campo profesional.
+
+Agradezco al profesor Bello por su guía y por fomentar un enfoque práctico en la materia. Es mi más sincero deseo que este compendio sirva como una herramienta de apoyo para futuras generaciones de estudiantes, facilitándoles la adopción de R y demostrando que el control de la calidad es una disciplina dinámica y en constante evolución.

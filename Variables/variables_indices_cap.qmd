@@ -1,0 +1,1776 @@
+---
+title: "Diagramas de Control para Variables y Análisis de Indices de Capacidad de Procesos Aplicados con ${\\color{Blue} \\textbf{\\textsf{R}}}$"
+---
+
+# Diagramas de control para variables
+
+Los diagramas de control para variables son herramientas gráficas del Control Estadístico de Procesos (CEP) que se usan para monitorear y analizar un proceso a lo largo del tiempo. Su objetivo principal es distinguir entre las variaciones comunes (aleatorias e inherentes al proceso) y las variaciones especiales o asignables (causadas por eventos específicos e inesperados).
+
+Estos diagramas se aplican a características de calidad que se pueden medir en una escala continua, como:
+
+-   Peso de un producto.
+
+-   Longitud o diámetro de una pieza.
+
+-   Temperatura de un horno.
+
+-   Tiempo de un ciclo de producción.
+
+## ¿Cómo funcionan? 
+
+📈 Un diagrama de control para variables grafica los datos de tu proceso en una secuencia de tiempo. Típicamente, consta de tres líneas horizontales:
+
+**Línea Central (LC)**: Representa el promedio histórico o el valor objetivo de la característica que se está midiendo. Es el rendimiento esperado del proceso.
+
+**Límite de Control Superior (LCS)**: Se ubica tres desviaciones estándar por encima de la línea central.
+
+**Límite de Control Inferior (LCI)**: Se ubica tres desviaciones estándar por debajo de la línea central.
+
+La idea es que, si un proceso es estable y solo presenta variaciones comunes, casi todos los puntos graficados se encontrarán dentro de estos límites de control y distribuidos de manera aleatoria alrededor de la línea central.
+
+Un punto fuera de los límites de control o un patrón no aleatorio (como una tendencia ascendente, 7 puntos seguidos de un mismo lado de la línea central, etc.) es una señal de que existe una causa especial de variación. Esto indica que algo inusual ha ocurrido y que el proceso está "fuera de control", lo que requiere una investigación para identificar y corregir el problema.
+
+## Tipos más comunes 
+
+Generalmente, se usan en pares para monitorear tanto la tendencia central como la dispersión (variabilidad) del proceso:
+
+**Gráfica** $\bar{X}−R$ **(Medias y Rangos)**: Es la más común. La gráfica $\bar{X}$ (de medias) monitorea el promedio del proceso, mientras que la gráfica $R$ (de rangos) monitorea la variabilidad dentro de las muestras. Se usa típicamente con tamaños de muestra pequeños (entre 2 y 10).
+
+**Gráfica** $\bar{X}−S$ **(Medias y Desviación Estándar)**: Similar a la anterior, pero la gráfica $S$ usa la desviación estándar en lugar del rango para medir la variabilidad. Es estadísticamente más robusta y se prefiere cuando los tamaños de muestra son más grandes (mayores a 10).
+
+**Gráfica** $I-MR$ **(Individuales y Rango Móvil)**: Se utiliza cuando solo se tiene una medición por cada punto en el tiempo (tamaño de muestra = 1), como en procesos lentos o donde la medición es costosa o destructiva.
+
+En el siguiente bloque de código se cargan todas las librerías o paquetes necesarios para el desarrollo de este capitulo, si no se tiene instalado alguno de ellos se instalaran automáticamente. 
+
+```{r}
+#| label: carga-paquetes-necesarios
+#| include: false
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
+library(pacman)
+pacman::p_load(ggplot2,ggfortify, DT, reshape2, knitr,  tidyverse, ggQC, pammtools, latex2exp, data.table, reactable, htmlwidgets, htmltools, highcharter, tinytex, qcc, kableExtra)
+```
+
+Del mismo modo, se crea una base de datos bib para los paquetes de R que se están utilizando en este capitulo, la cual se puede usar para crear una bibliografía al final del capitulo.
+
+```{r}
+#| include: false
+#| label: creacion-bibliografias
+
+# Crear automaticamente una base de datos bib para los paquetes de R 
+knitr::write_bib(
+  c(
+    .packages(), "knitr", "tidyverse", "qcc", "ggQC", "plotly",
+    "highcharter", "kableExtra", "data.table", "pacman",
+    "renv", "pammtools", "htmlwidgets", "htmltools", "data.table",
+    "RColorBrewer", "latex2exp", "tinytex", "reactable"
+  ),
+  "packages.bib"
+)
+
+```
+
+Por otro lado, aqui se crean funciones propias para darle formato a las salidas imprimidas en pantalla. las cuales se pueden usar en cualquier parte del capitulo.
+
+```{r}
+#| label: funciones-creadas
+#| include: false
+
+# funcion para ajustar fill-opacity usando css
+fillOpacity <- function(., alpha = 0.5) {
+  css <- sprintf("<style> .js-fill { fill-opacity: %s}
+!important; } </style>", alpha)
+  prependContent(., HTML(css))
+}
+
+# funcion para dar formato a numero
+formato <- function(x, digits = 4) {
+  if (!is.numeric(x)) stop("¡La entrada debe ser numerica!")
+  format(
+    round(x, digits = digits),
+    mode = "double",
+    big.mark = ".",
+    decimal.mark = ","
+  )
+}
+
+```
+
+## Diagrama de control para la Media($\bar{X}$) y el Rango($R$)
+Los diagramas de control para la media ($\bar{X}$) y el rango ($R$) son herramientas fundamentales en el Control Estadístico de Procesos (CEP). Estos diagramas permiten monitorear la tendencia central y la variabilidad de un proceso a lo largo del tiempo, ayudando a identificar si el proceso está bajo control estadístico o si existen causas asignables que afectan su desempeño. Los mismos seran ejemplificados a continuación.
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dcxr .Example}
+### Aplicación del diagrama de control para la Media($\bar{X}$) y el Rango($R$) {#sec-ejemplo-diagrama-xr}
+
+<br/>Se van a establecer gráficas de control para $\bar{X}$ y $R$ en determinada dimensión, en milímetros, de una parte. Se reunieron datos en tamaños de subgrupo igual a 6, y se citan a continuación en la @tbl-datos-peso-promedio-rango-parte. Determine la línea central y los límites de control tentativos. Suponga que hay causas asignables, y revise la línea central y los límites.Este ejemplo fue tomado de @besterfield1995control.
+
+```{r}
+#| label: tbl-datos-peso-promedio-rango-parte
+#| tbl-cap:  "Mediciones del peso promedio y el rango en milímetros de una parte"
+#| tbl-colwidths: [20,50]
+# Creando vectoress para X barra y R
+X_bar <- c(20.35, 20.40, 20.36, 20.65, 20.20, 20.40, 20.43, 20.37, 20.48, 20.42, 20.39, 20.38, 20.40, 20.41, 20.45, 20.34, 20.36, 20.42, 20.50, 20.31, 20.39, 20.39, 20.40, 20.41, 20.40)
+R <- c(0.34, 0.36, 0.32, 0.36, 0.36, 0.35, 0.31, 0.34, 0.30, 0.37, 0.29, 0.30, 0.33, 0.36, 0.34, 0.36, 0.37, 0.73, 0.38, 0.35, 0.38, 0.33, 0.32, 0.34, 0.30)
+
+
+# Creando el dataframe
+df <- data.frame(X_bar = X_bar, R = R)
+
+datos <- df |>
+  dplyr::mutate(
+    muestra = 1:nrow(df)
+  ) |>
+  dplyr::rename(
+    media = X_bar, 
+    rango = R     
+  ) |>
+  dplyr::relocate(
+    muestra,
+    .before = media
+  ) |>
+  data.table::as.data.table()
+
+formato <- function(x, digits = 4) {
+  formatC(x, format = "f", digits = digits, big.mark = ".", decimal.mark = ",")
+}
+
+# Configuraciones Reactable 
+options(
+  reactable.language = reactableLang(
+    searchPlaceholder = "buscar...",
+    pageNext = "Siguiente",
+    pagePrevious = "Anterior",
+    noData = "No entries found",
+    pageInfo = "{rowStart} de {rowEnd} de {rows} filas"
+  )
+)
+
+# Reactable tabla para los nuevos datos
+reactable::reactable(
+  datos,
+  list(
+    muestra = colDef(header = "Muestra", align = "right"),
+    media = colDef(
+      header = "\\( \\bar{x}_i \\)", align = "right",
+      format = colFormat(
+        separators = TRUE, digits = 3, locales = "es-ES"
+      )
+    ),
+    rango = colDef(
+      header = "\\( R_i \\)", align = "right",
+      format = colFormat(
+        separators = TRUE, digits = 3, locales = "es-ES"
+      )
+    )
+  ),
+  defaultColDef = colDef(align = "center"),
+  striped = TRUE,
+  bordered = TRUE,
+  highlight = TRUE
+)
+```
+
+Una vez observados los datos, Se procederá ahora a calcular los limites para ambos diagramas de control, para lo cual se usara el paquete `SixSigma` que contiene las constantes necesarias para calcular los limites de control, recordando que es un estudio inicial por lo que no se tienen ni los parámetros ni estimaciones de los mismos. 
+
+Primeramente, para la construcción del diagrama $R$, se requiere determinar $D_{3}$ y $D_{4}$, lo cual se puede obtener de la respectiva tabla, teniendo en cuenta que $n=6$, o mediante el siguiente bloque de código: 
+
+```{r}
+#| label: d3-d4
+
+n <- 6 # Sample size
+D_3 <- ifelse(
+  1 - 3 * (SixSigma::ss.cc.getd3(n) / SixSigma::ss.cc.getd2(n)) < 0, 0, 1 - 3 * (SixSigma::ss.cc.getd3(n) / SixSigma::ss.cc.getd3(n))
+)
+D_4 <- 1 + 3 * (SixSigma::ss.cc.getd3(n) / SixSigma::ss.cc.getd2(n))
+
+paste0("D_3 = ", formato(D_3), "   D_4 = ", formato(D_4))
+```
+De manera que, el calculo de los límites de control vendría dado por la siguiente expresión: 
+
+$$
+\begin{align*}
+LCI & = D_{3}\,\bar{R}  \\
+LC & = \bar{R}\\
+LCS & = D_{4}\,\bar{R} 
+\end{align*}
+$$ {#eq-lcxr}
+
+A continuación se muestran los calculos en siguiente bloque de código para el diagrama $R$:
+
+```{r}
+#| label: lci-Rbarra
+n <- 6 # Sample size 
+
+# Calculate D3 and D4 using SixSigma package
+D_3 <- ifelse(
+  1 - 3 * (SixSigma::ss.cc.getd3(n) / SixSigma::ss.cc.getd2(n)) < 0, 0, 1 - 3 * (SixSigma::ss.cc.getd3(n) / SixSigma::ss.cc.getd2(n))
+)
+D_4 <- 1 + 3 * (SixSigma::ss.cc.getd3(n) / SixSigma::ss.cc.getd2(n))
+
+# Calculate the average of the ranges from your df
+R_barra <- mean(datos$rango)
+
+# Calculate the control limits
+lci_R <- R_barra * D_3
+lc_R <- R_barra
+lcs_R <- R_barra * D_4
+
+# Print the results
+paste0("LCI_R = ", formato(lci_R), "    LC_R = ", formato(lc_R), "    LCS_R = ", formato(lcs_R))
+
+```
+Manualmente, el calculo es el siguiente:
+
+$$
+\begin{align*}
+LCI & = D_{3}\,\bar{R} = `r D_3`*`r R_barra` = `r formato(lci_R)`  \\
+LC & = \bar{R} = `r R_barra`  \\
+LCS & = D_{4}\,\bar{R} = `r formato(D_4)`*`r R_barra`  = `r formato(lcs_R)`
+\end{align*}
+$$ 
+La estimación de la varianza viene dada por: 
+
+$$
+\hat{\sigma}=\frac{\bar{R}}{d_{2}}= \frac{`r R_barra`}{`r formato(SixSigma::ss.cc.getd2(n))`} = `r formato(R_barra/SixSigma::ss.cc.getd2(n))`
+$$
+Para el diagrama $\bar{x}$, los limites se obtienen mediante la siguiente formula:
+
+$$
+\begin{align*}
+LCS & = \bar{\bar{x}} + A_2 \bar{R} \\
+LC  & = \bar{\bar{x}} \\
+LCI & = \bar{\bar{x}} - A_2 \bar{R}
+\end{align*} 
+$${#eq-lcx}
+
+Igualmente se calculan ahora los limites para el diagrama $\bar{X}$, para lo cual se usara el paquete `SixSigma` que contiene las constantes necesarias para calcular los limites de control.
+
+```{r}
+#| label: lci-xbarra
+
+n <- 6
+
+# Calculate A_2 using SixSigma package
+A_2 <- 3 / (sqrt(n) * SixSigma::ss.cc.getd2(n))
+
+# Calculate the overall average of the sample means from your df
+media_est <- mean(datos$media) # This corresponds to X_double_bar
+
+# Calculate the control limits
+lci_X <- media_est - A_2 * R_barra
+lc_X <- media_est
+lcs_X <- media_est + A_2 * R_barra
+
+# Print the results
+paste0("LCI_X = ", formato(lci_X), "    LC_X = ", formato(lc_X), "    LCS_X = ", formato(lcs_X))
+```
+Manualmente, los calculos se realizan de la siguiente forma: 
+
+$$
+\begin{align*}
+LCS & = \bar{\bar{x}} + A_2 \bar{R} = `r formato(media_est)`+`r formato(A_2)`*`r R_barra`= `r formato(lcs_X)` \\
+LC  & = \bar{\bar{x}} = `r formato(lc_X)`\\
+LCI & = \bar{\bar{x}} - A_2 \bar{R} = `r formato(media_est)`-`r formato(A_2)`*`r R_barra`= `r formato(lci_X)`
+\end{align*} 
+$$
+
+Una vez determinados los limites de control ya es posible realizar los diagramas de control respectivos con el paquete `highcharter`. Los cuales se pueden ver a continuación:
+
+```{r}
+#| label: fig-R-highcharter
+#| fig-cap: "Diagramas $R$ para el diámetro interior (mm) de los anillos en la fase I con el paquete `highcharter`"
+
+# Diagrama de Control para el Rango (Gráfico R)
+
+highchart() |>
+  hc_add_series(
+    data = datos,
+    hcaes(x = muestra, low = lc_R, high = lcs_R),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos,
+    hcaes(x = muestra, low = lci_R, high = lc_R),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lcs_R), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lc_R), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lci_R), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", color = "black",
+    hcaes(x = muestra, y = rango),
+    marker = list(
+      radius = 3, fillColor = "blue", symbol = "circle"
+    ),
+    useHTML = TRUE,
+    name = "<b><i>R<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Rango (R<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |>
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+Se puede observar en la @fig-R-highcharter el rango asociado al subgrupo 18 se encuentra fuera de los limites de control, por lo que suponiendo causas asignables el proceso esta fuera de control estadístico. Por lo que se tiene que recalcular los limites de control y construir nuevamente el diagrama $R$.
+
+```{r}
+#| label: fig-xbarra-highcharter
+#| fig-cap: "Diagramas $\\bar{x}$ para el diámetro interior (mm) de los anillos en la fase I con el paquete `highcharter`"
+
+highchart() |>
+  hc_add_series(
+    data = datos,
+    hcaes(x = muestra, low = lc_X, high = lcs_X),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos,
+    hcaes(x = muestra, low = lci_X, high = lc_X),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lcs_X), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lc_X), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lci_X), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", color = "black", hcaes(x = muestra, y = media),
+    marker = list(radius = 3, fillColor = "blue"),
+    useHTML = TRUE,
+    name = "<b><i>Media</i></b>", dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Media</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |>
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+Se puede observar igualmente en la @fig-xbarra-highcharter que aqui existen dos puntos consecutivos (4 y 5) fuera de los limites de control , por lo que suponiendo causas atribuibles el proceso se encuentra fuera de control estadistico. Por lo que se tiene que recalcular los limites de control y contruir nuevamente el diagrama $\bar{X}$.
+
+Los limites para el diagrama $R$, serian ahora los siguientes:
+
+```{r}
+#| label: lci-Rbarra-def
+datos <- datos[-c(4,5,18)]
+# Calculate D3 and D4 using SixSigma package
+D_3 <- ifelse(
+  1 - 3 * (SixSigma::ss.cc.getd3(n) / SixSigma::ss.cc.getd2(n)) < 0, 0, 1 - 3 * (SixSigma::ss.cc.getd3(n) / SixSigma::ss.cc.getd2(n))
+)
+D_4 <- 1 + 3 * (SixSigma::ss.cc.getd3(n) / SixSigma::ss.cc.getd2(n))
+
+# Calculate the average of the ranges from your df
+R_barra <- mean(datos$rango)
+
+# Calculate the control limits
+lci_R <- R_barra * D_3
+lc_R <- R_barra
+lcs_R <- R_barra * D_4
+
+# Print the results
+paste0("LCI_R = ", formato(lci_R), "    LC_R = ", formato(lc_R), "    LCS_R = ", formato(lcs_R))
+
+```
+
+Por otro lado, los limites para el diagrama $\bar{X}$ son los siguientes:
+
+```{r}
+#| label: lci-xbarra-def
+n <- 6
+
+# Calculate A_2 using SixSigma package
+A_2 <- 3 / (sqrt(n) * SixSigma::ss.cc.getd2(n))
+
+# Calculate the overall average of the sample means from your df
+media_est <- mean(datos$media) # This corresponds to X_double_bar
+
+# Calculate the control limits
+lci_X <- media_est - A_2 * R_barra
+lc_X <- media_est
+lcs_X <- media_est + A_2 * R_barra
+
+# Print the results
+paste0("LCI_X = ", formato(lci_X), "    LC_X = ", formato(lc_X), "    LCS_X = ", formato(lcs_X))
+```
+
+```{r}
+#| label: fig-R-highcharter-def
+#| fig-cap: "Diagramas $R$ para el diámetro interior (mm) de los anillos en la fase I con el paquete `highcharter`"
+
+highchart() |>
+  hc_add_series(
+    data = datos,
+    hcaes(x = muestra, low = lc_R, high = lcs_R),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos,
+    hcaes(x = muestra, low = lci_R, high = lc_R),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lcs_R), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lc_R), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lci_R), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", color = "black",
+    hcaes(x = muestra, y = rango),
+    marker = list(
+      radius = 3, fillColor = "blue", symbol = "circle"
+    ),
+    useHTML = TRUE,
+    name = "<b><i>R<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Rango (R<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |>
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+Como se puede observar ninguno de los puntos se encuentra fuera de los limites de control.
+
+```{r}
+#| label: fig-xbarra-highcharter-def
+#| fig-cap: "Diagramas $\\bar{x}$ para el diámetro interior (mm) de los anillos en la fase I con el paquete `highcharter`"
+
+highchart() |>
+  hc_add_series(
+    data = datos,
+    hcaes(x = muestra, low = lc_X, high = lcs_X),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos,
+    hcaes(x = muestra, low = lci_X, high = lc_X),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lcs_X), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lc_X), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", hcaes(x = muestra, y = lci_X), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = datos,
+    type = "line", color = "black", hcaes(x = muestra, y = media),
+    marker = list(radius = 3, fillColor = "blue"),
+    useHTML = TRUE,
+    name = "<b><i>Media</i></b>", dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Media</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |>
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+Igualmente, como se puede observar ninguno de los puntos se encuentra fuera de los limites de control. Por lo que, dado que para ambos diagramas de control (@fig-R-highcharter-def y @fig-xbarra-highcharter-def) no se encuentran ahora puntos fuera de control, se puede decir entonces que el proceso es estable o bajo control tanto en media como en varianza.
+
+### Capacidad del Proceso
+
+Para determinar la capacidad del proceso estabilizado, se informa que la especificación superior (LSE) para la dimensión de la parte es de 20.80 mm y la especificación inferior (LIE) es de 20.00 mm. Con estos datos y las propiedades del proceso que has determinado (media del proceso revisada y desviación estándar estimada a partir del rango promedio revisado), calcula los índices de capacidad del proceso ($C_p$ y  $C_{pk}$) y evalúa qué tan bien está operando el proceso en relación con las especificaciones.
+
+Para empezar, una vez determinado que el proceso se encuentra bajo control estadistico , se procede a calcular los indices de capacidad del proceso, por este motivo se supondrá que los datos siguen una distribución normal. 
+
+Los limites de tolerancia natural fueron los establecidos anteriormente, siendo estos $`r formato(lci_X)`$ y $`r formato(lcs_X)`$.
+
+
+```{r}
+#| label: fig-xr-cp
+#| fig-cap: "Capacidad del proceso"
+X_bar <- datos$media 
+R <- datos$rango     
+
+# Establecer los límites de especificación
+spec.limits <- c(20, 20.80)
+n <- 6 # Tamaño del subgrupo
+
+# Calcular la media del rango revisada
+R_barra <- mean(R)
+
+# ESTO ES CRÍTICO: Estimar la desviación estándar del proceso (sigma) a partir de R_barra
+# Usamos d2(n) para convertir el rango promedio en una estimación de sigma
+sd_estimado_proceso <- R_barra / SixSigma::ss.cc.getd2(n)
+
+# Verifica si tus 'R' (datos$rango después de la eliminación) tienen variabilidad.
+#print(paste("R_revisado después de la eliminación:", paste(R, collapse = ", ")))
+#print(paste("Media de R_revisado:", R_barra))
+#print(paste("Desviación estándar estimada del proceso (sd_estimado_proceso):", sd_estimado_proceso))
+
+
+# Realizar el análisis de capacidad del proceso
+# Pasamos la desviación estándar estimada al objeto qcc
+# NOTA: qcc(data, type = "xbar", ...) espera 'data' sean los *datos crudos* para calcular medias y std.dev.
+# O si le pasas las medias de los subgrupos (como estás haciendo con X_bar),
+# DEBES proporcionar una estimación de la desviación estándar del proceso ('std.dev')
+# o el rango promedio ('R.bar') si quieres que la estime de ahí.
+
+xbar_chart_obj <- qcc(X_bar, type = "xbar", sizes = n, plot = FALSE,
+                      std.dev = sd_estimado_proceso)
+capability <- process.capability(xbar_chart_obj, spec.limits = spec.limits , print = FALSE)
+
+# Mostrar los índices de capacidad del proceso
+#print(capability)
+#summary(capability)
+#plot(capability) # Para ver la gráfica de capacidad corregida
+
+# Calcular la porción caída (esto debería ser consistente con 'capability$exp' ahora)
+# mean_data es la media del proceso
+mean_data <- mean(X_bar) # Usar la media de las X_bar revisadas
+
+lower_limit <- spec.limits[1]
+upper_limit <- spec.limits[2]
+
+# Proporción de unidades por debajo del límite inferior
+portion_below <- pnorm(lower_limit, mean = mean_data, sd = sd_estimado_proceso)
+
+# Proporción de unidades por encima del límite superior
+portion_above <- 1 - pnorm(upper_limit, mean = mean_data, sd = sd_estimado_proceso)
+
+# Porción caída total
+portion_fallen <- portion_below + portion_above
+
+portion_fallen <- sum(capability$exp)
+
+# Mostrar la porción caída
+cat("Porción caída:", formato(portion_fallen), "\n")
+```
+El análisis de capacidad del proceso para la dimensión de la parte revela que, aunque hay un margen, el desempeño no es completamente óptimo.
+
+El **índice de capacidad potencial del proceso ($C_p$) de 0.999** indica una capacidad potencial **marginal**. Esto sugiere que la variabilidad intrínseca del proceso es casi igual a la amplitud de las especificaciones. Según Montgomery, valores de $C_p$ entre 0.67 y 1.0 son **no adecuados para el trabajo**, señalando que el proceso requiere un análisis profundo y modificaciones para alcanzar una calidad satisfactoria, a pesar de estar muy cerca de 1.0.
+
+El **índice de capacidad real del proceso ($C_{pk}$) de 0.992** es la **preocupación principal**. Al ser el menor de los $C_{pL}$ y $C_{pU}$ (siendo $C_{pL}$ el que lo determina), revela que el proceso **no está perfectamente centrado** dentro de los límites de especificación, mostrando una ligera tendencia hacia el límite inferior. Este valor por debajo de 1.0 confirma que el proceso **no es capaz** de cumplir consistentemente con los requisitos, ya que existe una probabilidad real de producir piezas fuera de especificación.
+
+El **índice de capacidad de Taguchi ($C_{pm}$) de 0.999**, siendo muy cercano al $C_p$, sugiere que, aunque hay una variabilidad inherente que "casi" cabe en las especificaciones, la **desviación respecto al valor objetivo (Target)** es mínima. Esto refuerza la necesidad de mejorar la uniformidad y precisión, principalmente enfocándose en reducir la variabilidad para aumentar la holgura del proceso dentro de las especificaciones.
+
+La **porción caída esperada (suma de Exp<LSL 0.15% y Exp>USL 0.13%) es de 0.28%**. Esto significa que aproximadamente el **0.28%** de las partes producidas se espera que estén fuera de los límites de especificación. Aunque el porcentaje observado (`Obs<LSL 0%`, `Obs>USL 0%`) fue cero en las 22 muestras, la expectativa de casi un 0.3% de defectos subraya la importancia de implementar medidas correctivas para reducir esta proporción y mejorar la precisión general del proceso de manufactura.
+:::
+::::
+
+## Diagrama de control para la Media($\bar{X}$) y la Desviación Estándar($S$)
+Para el caso de la media y la desviación estándar, se utilizan los diagramas de control $\bar{X}$ y $S$, respectivamente. Estos diagramas son útiles para monitorear la estabilidad del proceso en términos de su media y variabilidad. A continuación, se muestra un ejemplo de cómo construir estos diagramas a traves de un ejemplo práctico.
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dcxs .Example}
+### Aplicación del diagrama de control para la Media($\bar{X}$) y la Desviación Estándar($S$) {#sec-ejemplo-diagrama-xs}
+
+<br/>Se van a establecer gráficas de control para la dureza Brinell de acero endurecido para herramientas, en kilogramos por milímetro cuadrado. A continuación se muestran los datos para tamaños de subgrupo igual a 8. Determine la línea central y los límites de control tentativos para las gráficas $\bar{x}$ y $s$. Suponga que los puntos fuera de control tienen causas asignables, y calcule los límites y línea central revisados. Este ejemplo fue tomado de @besterfield1995control.
+
+```{r}
+#| label: tbl-datos-dureza_Brinell
+#| tbl-cap:  "Mediciones para la dureza Brinell de acero endurecido para herramientas, en kilogramos por milímetro cuadrado"
+# Crear el dataframe en R
+numero_de_subgrupo <- 1:25
+X_bar <- c(540, 534, 545, 561, 576, 523, 571, 547, 584, 552, 541, 545, 546, 551, 522, 579, 549, 508, 569, 574, 563, 561, 548, 556, 553)
+S <- c(26, 23, 24, 27, 25, 50, 29, 29, 23, 24, 28, 25, 26, 24, 29, 26, 28, 23, 22, 28, 33, 23, 25, 27, 23)
+
+df_dureza <- data.frame(NUMERO_DE_SUBGRUPO = numero_de_subgrupo, X_bar = X_bar, S = S)
+
+# Prepare the data for reactable, adapting from 'pistones' structure
+dureza <- df_dureza |>
+  dplyr::mutate(
+    # 'muestra' corresponds to 'numero_de_subgrupo'
+    muestra = numero_de_subgrupo
+  ) |>
+  dplyr::rename(
+    media = X_bar,        
+    desviacion = S        
+  ) |>
+  dplyr::select(
+    muestra,
+    media,
+    desviacion
+  ) |>
+  data.table::as.data.table()
+
+# Set reactable language options
+options(
+  reactable.language = reactableLang(
+    searchPlaceholder = "Buscar...",
+    pageNext = "Siguiente",
+    pagePrevious = "Anterior",
+    noData = "No se encontraron entradas",
+    pageInfo = "{rowStart} de {rowEnd} de {rows} filas"
+  )
+)
+
+# Generate the reactable table
+reactable::reactable(
+  dureza,
+  columns = list(
+    muestra = colDef(header = "Muestra", align = "right"),
+    media = colDef(
+      header = "\\( \\bar{x}_{i} \\)", align = "right",
+      format = colFormat(
+        separators = TRUE, digits = 3, locales = "es-ES" # Adjusted digits for your data
+      )
+    ),
+    desviacion = colDef(
+      header = "\\( S_{i} \\)", align = "right", # Changed 'r' to correct S_i notation
+      format = colFormat(
+        separators = TRUE, digits = 2, locales = "es-ES" # Adjusted digits for your data
+      )
+    )
+  ),
+  striped = TRUE,
+  bordered = TRUE,
+  highlight = TRUE,
+  filterable = TRUE,
+  # You can add a defaultColDef if you want to apply common styles to all columns
+  defaultColDef = colDef(align = "center")
+)
+```
+Una vez observados los datos, Se procederá ahora a calcular los limites para ambos diagramas de control, para lo cual se usara igualmente el paquete `SixSigma` que contiene las constantes necesarias para calcular los limites de control, recordando que es un estudio inicial por lo que no se tienen ni los parámetros ni estimaciones de los mismos. 
+
+Se empezara calculando los limites del diagrama inicial $S$. Los cuales vienen dados por:
+$$
+\begin{align*}
+LCS  & =  B_{4}\,\bar{S} \\
+LC  & =  \bar{S}\\
+LCI  & = B_{3}\,\bar{S}
+\end{align*}
+$$ {#eq-ls}
+
+Por lo que son necesarios los valores de $B_{3}$ y $B_{4}$, pueden ubicarse en sus respectivas tablas, o ser calculados en R mediante el siguiente bloque de código:
+
+```{r}
+#| label: B3-B4
+# Define the sample size (n) as specified in the Brinell problem
+n <- 8
+
+# Calculate control chart constants B_3 and B_4 for the S-chart
+# These constants depend on the sample size 'n' and SixSigma::ss.cc.getc4(n)
+B_3 <- ifelse(
+  1 - 3 * sqrt(1 - SixSigma::ss.cc.getc4(n)^2) / SixSigma::ss.cc.getc4(n) < 0, 0,
+  1 - 3 * sqrt(1 - SixSigma::ss.cc.getc4(n)^2) / SixSigma::ss.cc.getc4(n)
+)
+B_4 <- 1 + 3 * sqrt(1 - SixSigma::ss.cc.getc4(n)^2) / SixSigma::ss.cc.getc4(n)
+paste("B_3=",B_3,"   B_4=",formato(B_4))
+```
+
+Los limites se calculan de la siguiente forma:
+
+```{r}
+#| label: lci-Sbarra
+# Calculate the overall average of the subgroup standard deviations (S-bar)
+S_barra <- mean(dureza$desviacion)
+
+# Calculate the control limits for the S-chart
+lci_S <- B_3 * S_barra # Lower Control Limit for S-chart
+lc_S <- S_barra        # Center Line for S-chart
+lcs_S <- B_4 * S_barra # Upper Control Limit for S-chart
+
+# Print the calculated control limits
+paste0("LCI_S = ", formato(lci_S), "    LC_S = ", formato(lc_S), "    LCS_S = ", formato(lcs_S))
+```
+
+Manualmente, el calculo es el siguiente:
+
+$$
+\begin{align*}
+LCS  & =  B_{4}\,\bar{S} = `r formato(B_4)`*`r formato(S_barra)`= `r formato(lcs_S)` \\
+LC  & =  \bar{S}  = `r formato(lc_S)` \\
+LCI  & = B_{3}\,\bar{S} = `r formato(B_3)`*`r formato(S_barra)`= `r formato(lci_S)`
+\end{align*}
+$$ 
+
+Los limites para el diagrama de control $\bar{x}$ se calculan de la siguiente forma:
+$$
+\begin{align*}
+LCI & = \bar{\bar{x}} - A_{3}\,\bar{S}  \\
+LC & = \bar{\bar{x}}  \\
+LCS & = \bar{\bar{x}} + A_{3}\,\bar{S} 
+\end{align*}
+$${#eq-lix}
+
+Mediante el siguiente bloque de código se obtienen los limites: 
+
+```{r}
+#| label: lci-xbarra2
+media_est <- mean(dureza$media)
+A_3 <- 3 / (sqrt(n) * SixSigma::ss.cc.getc4(n))
+lci_X <- media_est - A_3 * S_barra
+lc_X <-  media_est
+lcs_X <- media_est + A_3 * S_barra
+paste0("LCI = ", formato(lci_X), "    LC = ", formato(lc_X), "    LCS = ", formato(lcs_X))
+```
+
+Manualmente, se obtienen mediante el siguiente calculo:
+
+$$
+\begin{align*}
+LCI & = \bar{\bar{x}} - A_{3}\,\bar{S} = `r formato(media_est)`-`r formato(A_3)`*`r formato(S_barra)`= `r formato(lci_X)`\\
+LC & = \bar{\bar{x}} = `r formato(lc_X)` \\
+LCS & = \bar{\bar{x}} + A_{3}\,\bar{S} = `r formato(media_est)`+`r formato(A_3)`*`r formato(S_barra)`= `r formato(lcs_X)`
+\end{align*}
+$$
+Una vez ya calculados los limites. A continuación se muestran cada uno de estos diagramas:
+
+```{r}
+#| label: fig-Sinicial-highcharter
+#| fig-cap: "Diagrama $S$ para la dureza Brinell del acero (kg/mm²) en la fase I con el paquete `highcharter`"
+highchart() |>
+  hc_add_series(
+    data = dureza,
+    hcaes(x = muestra, low = lc_S, high = lcs_S),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = dureza, 
+    hcaes(x = muestra, low = lci_S, high = lc_S),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2,
+    name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = dureza,
+    type = "line", hcaes(x = muestra, y = lcs_S), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, 
+    type = "line", hcaes(x = muestra, y = lc_S), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, 
+    type = "line", hcaes(x = muestra, y = lci_S), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, # Puntos de datos reales
+    type = "line", color = "black",
+    hcaes(x = muestra, y = desviacion),
+    marker = list(radius = 3, fillColor = "blue"), # Añadido fillColor para consistencia
+    useHTML = TRUE, name = "<b><i>S<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Desviación estándar (S<sub>i</sub>)</i></b><br>")
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |>
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+Como se puede observar en la @fig-Sinicial-highcharter se observa que el punto 6 esta fuera de los limites de control, se concluye que el proceso no esta bajo control estadistico en varianza. Por lo que suponiendo causas asignables se eliminara del diagrama para recalcular los limites y observar nuevamente el comportamiento del proceso.
+
+```{r}
+#| label: fig-xbarra2-inicial-highcharter
+#| fig-cap: "Diagrama $\\bar{x}$ para la dureza Brinell del acero (kg/mm²) en la fase I con el paquete `highcharter`"
+highchart() |>
+  hc_add_series(
+    data = dureza, # Usar datos auxiliares para los límites
+    hcaes(x = muestra, low = lc_X, high = lcs_X),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = dureza, # Usar datos auxiliares para los límites
+    hcaes(x = muestra, low = lci_X, high = lc_X),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = dureza, # Usar datos auxiliares para los límites
+    type = "line", hcaes(x = muestra, y = lcs_X), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, # Usar datos auxiliares para los límites
+    type = "line", hcaes(x = muestra, y = lc_X), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, # Usar datos auxiliares para los límites
+    type = "line", hcaes(x = muestra, y = lci_X), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, # Puntos de datos reales
+    type = "line", color = "black", hcaes(x = muestra, y = media),
+    marker = list(radius = 3, fillColor = "blue"),
+    useHTML = TRUE,
+    name = "<b><i>Media</i></b>", dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Media</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |>
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+Se puede observar en la @fig-xbarra2-inicial-highcharter que se tienen dos puntos fuera de los limites de control, siendo los puntos 8 y 18. Ahora bien, el punto 15 se encuentra muy cercano teniendo una diferencia con este de 0,46, lo cual es menor a unidad. Basado en uno de los criterios de General Electric, el cual establece que un punto que se encuentre muy cercano a uno de los limites debera considerarse como una advertencia de que el proceso no esta funcionando como deberia. Por lo que el proceso no se encuentra bajo control estadistico en su media, suponiendo causas asignables se procedera a eliminar los tres puntos de proceso, recalcular los limites y graficar nuevamente el diagrama.
+
+Los nuevos limites para el diagrama $S$, se calculan en el siguiente bloque de código: 
+```{r}
+#| label: lci-s-def
+dureza <- dureza[-c(6,8,15,18)]
+# Calculate control chart constants B_3 and B_4 for the S-chart
+# These constants depend on the sample size 'n' and SixSigma::ss.cc.getc4(n)
+B_3 <- ifelse(
+  1 - 3 * sqrt(1 - SixSigma::ss.cc.getc4(n)^2) / SixSigma::ss.cc.getc4(n) < 0, 0,
+  1 - 3 * sqrt(1 - SixSigma::ss.cc.getc4(n)^2) / SixSigma::ss.cc.getc4(n)
+)
+B_4 <- 1 + 3 * sqrt(1 - SixSigma::ss.cc.getc4(n)^2) / SixSigma::ss.cc.getc4(n)
+
+# Calculate the overall average of the subgroup standard deviations (S-bar)
+S_barra <- mean(dureza$desviacion)
+
+# Calculate the control limits for the S-chart
+lci_S <- B_3 * S_barra # Lower Control Limit for S-chart
+lc_S <- S_barra        # Center Line for S-chart
+lcs_S <- B_4 * S_barra # Upper Control Limit for S-chart
+
+# Define the 'formato' function as it was used in your original snippet
+# (Assuming it formats numbers with commas as decimal separators and two digits)
+formato <- function(x, digits = 4) {
+  formatC(x, format = "f", digits = digits, big.mark = ".", decimal.mark = ",")
+}
+
+# Print the calculated control limits
+paste0("LCI_S = ", formato(lci_S), "    LC_S = ", formato(lc_S), "    LCS_S = ", formato(lcs_S))
+
+```
+
+Por otro lado, los nuevos limites para el diagrama $\bar{X}$, se calculan en el siguiente bloque de código:
+
+```{r}
+#| label: lci-xbarra2-def
+media_est <- mean(dureza$media)
+A_3 <- 3 / (sqrt(n) * SixSigma::ss.cc.getc4(n))
+lci_X <- media_est - A_3 * S_barra
+lc_X <-  media_est
+lcs_X <- media_est + A_3 * S_barra
+paste0("LCI = ", formato(lci_X), "    LC = ", formato(lc_X), "    LCS = ", formato(lcs_X))
+```
+
+A continuación se muestran los diagramas de control:
+
+```{r}
+#| label: fig-Sinicial-highcharter-def
+#| fig-cap: "Diagrama $S$ para la dureza Brinell del acero (kg/mm²) en la fase I con el paquete `highcharter`"
+highchart() |>
+  hc_add_series(
+    data = dureza,
+    hcaes(x = muestra, low = lc_S, high = lcs_S),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = dureza, 
+    hcaes(x = muestra, low = lci_S, high = lc_S),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2,
+    name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = dureza,
+    type = "line", hcaes(x = muestra, y = lcs_S), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, 
+    type = "line", hcaes(x = muestra, y = lc_S), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, 
+    type = "line", hcaes(x = muestra, y = lci_S), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, # Puntos de datos reales
+    type = "line", color = "black",
+    hcaes(x = muestra, y = desviacion),
+    marker = list(radius = 3, fillColor = "blue"), # Añadido fillColor para consistencia
+    useHTML = TRUE, name = "<b><i>S<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Desviación estándar (S<sub>i</sub>)</i></b><br>")
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |>
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+Como se puede observar en la @fig-Sinicial-highcharter-def ninguno de los puntos se encuentra fuera de los limites de control.
+
+```{r}
+#| label: fig-xbarra2-inicial-highcharter-def
+#| fig-cap: "Diagrama $\\bar{x}$ para la dureza Brinell del acero (kg/mm²) en la fase I con el paquete `highcharter`"
+highchart() |>
+  hc_add_series(
+    data = dureza, # Usar datos auxiliares para los límites
+    hcaes(x = muestra, low = lc_X, high = lcs_X),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = dureza, # Usar datos auxiliares para los límites
+    hcaes(x = muestra, low = lci_X, high = lc_X),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "",
+    color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = dureza, # Usar datos auxiliares para los límites
+    type = "line", hcaes(x = muestra, y = lcs_X), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, # Usar datos auxiliares para los límites
+    type = "line", hcaes(x = muestra, y = lc_X), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, # Usar datos auxiliares para los límites
+    type = "line", hcaes(x = muestra, y = lci_X), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = dureza, # Puntos de datos reales
+    type = "line", color = "black", hcaes(x = muestra, y = media),
+    marker = list(radius = 3, fillColor = "blue"),
+    useHTML = TRUE,
+    name = "<b><i>Media</i></b>", dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Muestra (n<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Media</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |>
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+Igualmente, como se puede observar ninguno de los puntos se encuentra fuera de los limites de control. Por lo que, dado que para ambos diagramas de control (@fig-Sinicial-highcharter-def y @fig-xbarra2-inicial-highcharter-def) no se encuentran ahora puntos fuera de control, se puede decir entonces que la dureza Brinell de acero endurecido para herramientas, en kilogramos por milímetro cuadrado es estable tanto en media como en varianza.
+
+### Capacidad del Proceso
+Para determinar la capacidad del proceso estabilizado, se informa que la especificación superior (LSE) para la dureza Brinell es de 600 kg/mm² y la especificación inferior (LIE) es de 500 kg/mm². Con estos datos y las propiedades del proceso que has determinado (media del proceso revisada y desviación estándar estimada a partir del rango promedio revisado), calcula los índices de capacidad del proceso ($C_p$ y  $C_{pk}$) y evalúa qué tan bien está operando el proceso en relación con las especificaciones.
+
+Para empezar, una vez determinado que el proceso se encuentra bajo control estadistico , se procede a calcular los indices de capacidad del proceso, por este motivo se supondrá que los datos siguen una distribución normal. 
+
+Los limites de tolerancia natural fueron los establecidos anteriormente, siendo estos $`r formato(lci_X)`$ y $`r formato(lcs_X)`$.
+
+```{r}
+#| label: fig-xs-cp
+#| fig-cap: "Capacidad del proceso"
+
+X_bar <- dureza$media
+S <- dureza$desviacion
+# Establecer los límites de especificación
+spec.limits <- c(500, 600)
+
+# Calcular la media del rango revisada
+S_barra <- mean(S)
+
+# ESTO ES CRÍTICO: Estimar la desviación estándar del proceso (sigma) a partir de R_barra
+# Usamos d2(n) para convertir el rango promedio en una estimación de sigma
+sd_estimado_proceso <- S_barra / SixSigma::ss.cc.getd2(n)
+
+xbar_chart_obj <- qcc(X_bar, type = "xbar", sizes = n, plot = FALSE,
+                      std.dev = sd_estimado_proceso)
+capability <- process.capability(xbar_chart_obj, spec.limits = spec.limits , print = FALSE)
+
+# Calcular la porción caída (esto debería ser consistente con 'capability$exp' ahora)
+# mean_data es la media del proceso
+mean_data <- mean(X_bar) # Usar la media de las X_bar revisadas
+
+lower_limit <- spec.limits[1]
+upper_limit <- spec.limits[2]
+
+# Proporción de unidades por debajo del límite inferior
+portion_below <- pnorm(lower_limit, mean = mean_data, sd = sd_estimado_proceso)
+
+# Proporción de unidades por encima del límite superior
+portion_above <- 1 - pnorm(upper_limit, mean = mean_data, sd = sd_estimado_proceso)
+
+# Porción caída total
+portion_fallen <- portion_below + portion_above
+
+portion_fallen <- sum(capability$exp)
+
+# Mostrar la porción caída
+cat("Porción caída:", formato(portion_fallen), "\n")
+```
+
+El análisis de capacidad del proceso para la **dureza Brinell de acero endurecido para herramientas** revela que el desempeño es **altamente capaz y robusto**. 
+
+El **índice de capacidad potencial del proceso ($C_p$) de 1.85** indica una **excelente capacidad potencial**. Esto sugiere que la variabilidad intrínseca del proceso es significativamente menor que la amplitud de las especificaciones. Un $C_p$ mayor a 1.33 es generalmente considerado **altamente adecuado** para el trabajo, lo que significa que el proceso puede cumplir consistentemente con los límites de dureza Brinell establecidos.
+
+El **índice de capacidad real del proceso ($C_{pk}$) de 1.59** confirma la **gran capacidad del proceso**. Este valor, determinado por el $C_{pU}$ (1.59 vs $C_{pL}$ 2.11), revela que el proceso está **bien centrado** dentro de los límites de especificación, aunque con una ligera tendencia hacia el límite superior. Un $C_{pk}$ superior a 1.33 es una señal de un proceso **altamente capaz y robusto**, con un riesgo muy bajo de producir mediciones de dureza fuera de las especificaciones.
+
+El **índice de capacidad de Taguchi ($C_{pm}$) de 1.46** corrobora la **solidez del proceso** al considerar no solo la variabilidad y la centración, sino también la desviación respecto al valor objetivo (Target = 550 kg/mm²). Este valor alto sugiere que la salida del proceso (media observada de 557.0476 kg/mm²) está razonablemente cerca del objetivo, y la variabilidad es baja, lo que garantiza una alta calidad y consistencia.
+
+La **porción caída esperada (Exp<LSL 0% y Exp>USL 0%) es de 0%** en ambos lados de las especificaciones. Esto significa que se espera que **ninguna de las mediciones de dureza Brinell** esté fuera de los límites de especificación. La **porción observada fue también del 0%** (`Obs<LSL 0%`, `Obs>USL 0%`) en las 21 muestras, lo que refuerza la conclusión de que el proceso es **extremadamente capaz y estable**, produciendo constantemente resultados dentro de los requisitos de dureza.
+
+:::
+::::
+
+## Diagrama de control para la Media($\bar{X}$) y la Desviación Estándar($S$) con tamaño de muestra variable
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dxstmv .Example}
+## Aplicación de los Diagramas $\bar{x}$ y $S$ con tamaño de muestra variable. {#sec-ejemplo-diagrama-xstmv}
+
+<br/>Una empresa de producción de alimentos se encuentra interesada en supervisar la concentración de un conservante en los productos que ofrece, para ello toman entre 10 y 15 muestras de 20 lotes de producción distintos, midiendo la concentración del conservante en su respectiva unidad.
+
+La @tbl-datos-ejemplo-dxstmv muestra las medias y las desviaciones que presentó cada lote inspeccionado, junto con su la cantidad de muestras que se tomó en el lote correspondiente. Este ejemplo fue tomado de @rendon2013control.
+
+```{r}
+#| label: tbl-datos-ejemplo-dxstmv
+#| tbl-cap: "Número total de defectos en cada unidad de inspección"
+#| tbl-align: left
+#| tbl-colwidths: [20,40]
+
+datos_xstmv <- tibble(
+  obs=c(1:20),
+medias=c(1.76, 1.55, 1.79, 1.73, 1.74, 1.68, 1.84, 1.88, 1.83, 1.89, 1.76, 1.76, 1.85, 1.51, 2.08, 1.85, 1.69, 1.90, 1.84, 1.62
+  ),
+des=c(0.486, 0.508, 0.396, 0.622, 0.484, 0.377, 0.532, 0.424, 0.527, 0.409, 0.443, 0.403, 0.578, 0.409, 0.424, 0.479, 0.438, 0.429, 0.484, 0.434
+  ),
+tamano=c(11L, 12L, 14L, 14L, 10L, 15L, 13L, 12L, 14L, 11L, 12L, 15L, 10L, 13L, 14L, 11L, 10L, 12L, 15L, 13L
+  )
+)
+
+knitr::kable(
+  datos_xstmv,
+  booktabs = TRUE,
+  format = "html",
+  col.names = c(
+    "Lote", "Media", "Desviación", "Tamaño"
+  ),
+  align = "cc",
+  escape = FALSE,
+) 
+```
+
+Para la construcción del diagrama de control, se utilizará el criterio del tamaño de muestra promedio, calculado de la siguiente forma:
+
+$$
+\begin{equation}
+\bar{n}= \frac{\sum_{i=1}^{m}n_i}{m}
+\end{equation}
+$$ {#eq-tmp}
+
+En R, el calculo se realiza de la siguiente forma:
+
+```{r}
+#| label: npro
+sumn <- sum(datos_xstmv$tamano)
+m <- 20
+npro <- round(sumn/m,0)
+paste(npro)
+```
+
+Los limites de control para el diagrama $S$ se obtienen de la siguiente forma: 
+$$
+\begin{align*}
+LCI & = B_{3}\left(\bar{n} \right)\,\bar{S} \\
+LC & = \bar{S} \\
+LCS & = B_{4}\left(\bar{n} \right)\,\bar{S} 
+\end{align*}
+$$ {#eq-lstmv}
+
+Del mismo, se calculan con R utilizando el siguiente bloque de código:
+
+```{r}
+#| label: lci-Sbarratmv
+
+B_3 <- ifelse(
+  1 - 3 * sqrt(1 - SixSigma::ss.cc.getc4(npro)^2) / SixSigma::ss.cc.getc4(npro) < 0, 0,
+  1 - 3 * sqrt(1 - SixSigma::ss.cc.getc4(npro)^2) / SixSigma::ss.cc.getc4(npro)
+)
+B_4 <- 1 + 3 * sqrt(1 - SixSigma::ss.cc.getc4(npro)^2) / SixSigma::ss.cc.getc4(npro)
+
+media_est <- mean(datos_xstmv$medias)
+S_barra <- mean(datos_xstmv$des)
+lci_S <- B_3 * S_barra
+lc_S <- S_barra
+lcs_S <- B_4 * S_barra
+paste0("LCI = ", formato(lci_S), "    LC = ", formato(lc_S), "    LCS = ", formato(lcs_S))
+
+```
+
+Los limites de control para $\bar{x}$ vienen dados por la siguiente expresión:
+
+$$
+\begin{align*}
+LCI & = \bar{\bar{x}} - A_{3}\left(\bar{n} \right)\,\bar{S}  \\
+LC & = \bar{\bar{x}} \\
+LCS & = \bar{\bar{x}} + A_{3}\left(\bar{n} \right)\,\bar{S}
+\end{align*}
+$$ {#eq-lcxtmv}
+
+En R, el calculo se realiza mediante el siguiente bloque de código:
+
+```{r}
+#| label: lci-xbarra3
+
+A_3 <- 3 / (sqrt(npro) * SixSigma::ss.cc.getc4(npro))
+lci <- media_est - A_3 * S_barra
+lc <-  media_est
+lcs <- media_est + A_3 * S_barra
+paste0("LCI = ", formato(lci), "    LC = ", formato(lc), "    LCS = ", formato(lcs))
+```
+
+La representación gráfica de este diagrama se observa en la @fig-dcxbarraStmv-qcc:
+
+```{r}
+#| label: fig-dcxbarraStmv-qcc
+#| fig-cap: "Diagramas $\\bar{x}$ y $S$ para la cantidad de conservante por lote con el paquete `qcc`"
+#| fig-subcap:
+#|   - "Diagrama $S$ inicial"
+#|   - "Diagrama $\\bar{x}$ inicial"
+#| layout-ncol: 2
+
+# Diagrama S en la fase 1
+S1 <- qcc(
+  datos_xstmv$des,sizes = npro,limits = c(lci_S, lcs_S),
+  type = "S", plot = FALSE
+)
+plot(
+  S1,
+  add.stats = FALSE, label.limits = c("LCI", "LCS"),
+  title = "", xlab = "Lote", ylab = "Desviación estándar",
+  chart.all = TRUE
+)
+
+# Diagrama xbarra en la fase 1
+xbarra_xs2 <- qcc(
+  datos_xstmv$medias, sizes = npro,limits = c(lci, lcs),
+  type = "xbar",
+  plot = FALSE
+)
+plot(
+  xbarra_xs2,
+  add.stats = FALSE, label.limits = c("LCI", "LCS"),
+  title = "", xlab = "Lote", ylab = "Medias",
+  chart.all = TRUE
+)
+
+```
+
+```{r}
+#| label: fig-dcxbarraStmv-highcharter
+#| fig-cap: "Diagrama $S$ para la cantidad de conservante por lote con `highcharter`"
+#| echo: false
+#| include: false
+
+# highchart() |>
+#   hc_add_series(
+#     data = datos_xstmv,
+#     hcaes(x = obs, low = lcs, high = lc),
+#     step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+#     type = "arearange", fillOpacity = 0.2, name = "Rango Superior", color = "green",
+#     showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+#   ) |>
+#   hc_add_series(
+#     data = datos_xstmv,
+#     hcaes(x = obs, low = lci, high = lc),
+#     step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+#     type = "arearange", fillOpacity = 0.2, name = "Rango Inferior", color = "blue",
+#     showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+#   ) |>
+#   hc_add_series(
+#     datos_xstmv,
+#     type = "line", hcaes(x = obs, y = lcs), useHTML = TRUE,
+#     color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+#     step = "hv", marker = list(enabled = FALSE),
+#     tooltip = list(valueDecimals = 4) # Ajusta los decimales según la precisión de tus datos
+#   ) |>
+#   hc_add_series(
+#     datos_xstmv,
+#     type = "line", hcaes(x = obs, y = lc), useHTML = TRUE,
+#     color = "blue", name = "<b><i>LC</b></i>",
+#     step = "hv", marker = list(enabled = FALSE),
+#     tooltip = list(valueDecimals = 4)
+#   ) |>
+#   hc_add_series(
+#     datos_xstmv,
+#     type = "line", hcaes(x = obs, y = lci), useHTML = TRUE,
+#     color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+#     step = "hv", marker = list(enabled = FALSE),
+#     tooltip = list(valueDecimals = 4)
+#   ) |>
+#   hc_add_series(
+#     datos_xstmv,
+#     type = "line", color = "black",
+#     hcaes(x = obs, y = des), # 'des' es la columna de desviación estándar/rango
+#     marker = list(radius = 3),
+#     useHTML = TRUE, name = "<b><i>S<sub>i</sub></i></b>",
+#     dashStyle = "Solid", # O "Dash" si prefieres
+#     tooltip = list(valueDecimals = 4)
+#   ) |>
+#   hc_xAxis(
+#     title = list(
+#       useHTML = TRUE,
+#       text = "<b><i>Lote</b></i><br>"
+#     )
+#   ) |>
+#   hc_yAxis(
+#     title = list(
+#       useHTML = TRUE,
+#       text = "<b><i>Desviación estándar (S<sub>i</sub>)</b></i><br>"
+#     )
+#   ) |>
+#   hc_tooltip(crosshairs = TRUE, shared = TRUE) |>
+#   hc_plotOptions(series = list(animation = FALSE)) |>
+#   hc_title(text = "Diagrama S inicial") # Título para el sub-gráfico
+```
+
+
+Se observa que tanto el diagrama de control de la **desviación estándar ($S$)** como el diagrama de control de la **media ($\bar{X}$)**, como se muestra en la Figura @fig-dcxbarraStmv-qcc, tienen **todos sus puntos dentro de los límites de control**.
+
+Esto indica que la **variabilidad del proceso** está bajo control estadístico, permitiendo utilizar la estimación de $\sigma$ (la desviación estándar del proceso) para el monitoreo futuro. De manera similar, el **centro del proceso** también está bajo control estadístico, operando bajo causas fortuitas. Por lo tanto, la estimación de $\mu$ (la media del proceso) puede emplearse para supervisar las futuras concentraciones de conservantes en los alimentos producidos.
+
+En resumen, el proceso de concentración de conservantes en los alimentos se encuentra en **estado de control estadístico**, tanto en su variabilidad como en su promedio, lo que permite la utilización de las estimaciones actuales para su supervisión y mejora continua.
+
+### Capacidad del Proceso
+
+Para determinar la capacidad del proceso estabilizado, se informa que la especificación superior (LSE) para la concentración de conservante es de 2.0 y la especificación inferior (LIE) es de 1.0. Con estos datos y las propiedades del proceso que has determinado (media del proceso revisada y desviación estándar estimada a partir del rango promedio revisado), calcula los índices de capacidad del proceso ($C_p$ y  $C_{pk}$) y evalúa qué tan bien está operando el proceso en relación con las especificaciones.
+
+Los límites de tolerancia natural fueron los establecidos anteriormente, siendo estos $`r formato(lci)`$ y $`r formato(lcs)`$. 
+
+```{r}
+#| label: fig-xstmv-cp
+#| fig-cap: "Capacidad del proceso"
+
+X_bar <- datos_xstmv$medias
+S <- datos_xstmv$des
+# Establecer los límites de especificación
+spec.limits <- c(1, 2)
+
+# Calcular la media del rango revisada
+S_barra <- mean(S)
+
+# ESTO ES CRÍTICO: Estimar la desviación estándar del proceso (sigma) a partir de R_barra
+# Usamos d2(n) para convertir el rango promedio en una estimación de sigma
+sd_estimado_proceso <- S_barra / SixSigma::ss.cc.getd2(npro)
+
+xbar_chart_obj <- qcc(X_bar, type = "xbar", sizes = npro, plot = FALSE,
+                      std.dev = sd_estimado_proceso)
+capability <- process.capability(xbar_chart_obj, spec.limits = spec.limits , print = FALSE)
+
+# Calcular la porción caída (esto debería ser consistente con 'capability$exp' ahora)
+# mean_data es la media del proceso
+mean_data <- mean(X_bar) # Usar la media de las X_bar revisadas
+
+lower_limit <- spec.limits[1]
+upper_limit <- spec.limits[2]
+
+# Proporción de unidades por debajo del límite inferior
+portion_below <- pnorm(lower_limit, mean = mean_data, sd = sd_estimado_proceso)
+
+# Proporción de unidades por encima del límite superior
+portion_above <- 1 - pnorm(upper_limit, mean = mean_data, sd = sd_estimado_proceso)
+
+# Porción caída total
+portion_fallen <- portion_below + portion_above
+
+portion_fallen <- sum(capability$exp)
+
+# Mostrar la porción caída
+cat("Porción caída:", formato(portion_fallen), "\n")
+```
+
+El análisis de capacidad del proceso para la **concentración de conservantes** en los productos alimenticios revela un desempeño con **oportunidades significativas de mejora**. 
+
+El **índice de capacidad potencial del proceso ($C_p$) de 1.2** indica una capacidad potencial **aceptable, pero no óptima**. Esto sugiere que la variabilidad intrínseca del proceso, si estuviera perfectamente centrado, apenas cabe dentro de la amplitud de las especificaciones. Aunque un $C_p$ de 1.2 está por encima del umbral de 1.0 (que Montgomery considera "no adecuado"), aún **no alcanza los niveles deseables de 1.33 o 1.67** para procesos de clase mundial, lo que significa que la variabilidad es aún considerable en relación con la tolerancia.
+
+El **índice de capacidad real del proceso ($C_{pk}$) de 0.533** es la **principal preocupación** en este análisis. Al ser significativamente menor que 1.0, y en este caso determinado por $C_{pU}$ (0.533 vs $C_{pL}$ 1.86), revela que el proceso está **mal centrado** y muestra una **fuerte tendencia hacia el Límite Superior de Especificación (USL)**. Este valor, muy por debajo de 1.0, confirma que el proceso **no es capaz** de cumplir consistentemente con los requisitos de concentración, ya que una parte sustancial de la distribución se extiende más allá del límite superior.
+
+El **índice de capacidad de Taguchi ($C_{pm}$) de 0.537** corrobora la **deficiencia del proceso**. Este valor, cercano al $C_{pk}$, refleja que la desviación del proceso no solo es notable en relación con las especificaciones, sino que también está **desalineado con el valor objetivo (Target = 1.5)**. La media del proceso (1.7775) se ha desplazado considerablemente del objetivo, lo que penaliza fuertemente este índice y refuerza la necesidad urgente de reajustar la centración del proceso.
+
+La **porción caída esperada (Exp>USL 5.5%) es de 5.5%** por encima del límite superior. Esto significa que aproximadamente el **5.5%** de los lotes de producción se espera que tengan una concentración de conservante por encima del límite permitido. Aunque la **porción observada fue del 0%** por debajo del LSL y **5%** por encima del USL en las 20 muestras (`Obs<LSL 0%`, `Obs>USL 5%`), la alta expectativa de defectos subraya la importancia crítica de implementar medidas correctivas inmediatas para **reducir la concentración promedio y su variabilidad**, asegurando así que los productos cumplan con las normativas de conservantes.
+:::
+::::
+
+## Diagrama de Control Para Observaciones Individuales
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dcmr .Example}
+### Aplicación del diagrama de control $MR$ {#sec-ejemplo-diagrama-mr}
+
+<br/>En el departamento de sistemas se lleva un registro del tiempo de respuesta a solicitudes de servicio de clientes internos. Los últimos datos en horas y en el orden de ocurrencia se muestran en la @tbl-datos-tiempo_respuesta_solicitudes. Obtenga los límites de control para una carta de control de individuales e interprételos. Este ejemplo fue tomado de @gutierrez2009control.
+
+```{r}
+#| label: tbl-datos-tiempo_respuesta_solicitudes
+#| tbl-cap:  "Registros del tiempo de respuesta a solicitudes de servicio de clientes internos"
+response_times <- c(
+  39, 35, 49, 92, 41, 57, 38, 37, 33, 33, 44, 34, 119, 37,
+  34, 32, 34, 23, 96, 43, 36, 32, 35, 42, 42, 34, 86, 27,
+  42, 117, 33, 39, 43, 37, 78, 42, 37, 37, 33, 96, 26, 37,
+  29, 32, 38, 98, 39, 43, 126, 87, 46, 31, 109, 37, 40, 37,
+  28, 52, 122, 40, 29, 33, 35, 71, 62
+)
+
+# Create a dataframe for individual observations
+# For individual charts, each observation is a "subgroup" of size 1.
+# We'll create an index for each observation.
+individual_times <- data.table::data.table(
+  check.names = FALSE,
+  Observacion = 1:length(response_times),
+  Tiempo_Respuesta_Horas = response_times
+) |>
+  dplyr::mutate(
+    MR = c(NA, abs(diff(Tiempo_Respuesta_Horas)))
+  ) |>
+  data.table::data.table()
+
+options(
+  reactable.language = reactableLang(
+    searchPlaceholder = "Buscar",
+    pageNext = "Siguiente",
+    pagePrevious = "Anterior",
+    noData = "Ninguna fila encontrada",
+    pageInfo = "{rowStart} de {rowEnd} de {rows} filas"
+  )
+)
+
+reactable::reactable(
+  individual_times,
+  # defaultColDef = colDef(
+  #   headerStyle = list(background = "#f7f7f8")
+  # ),
+  columns = list(
+    Observacion = colDef(header = "Número de Observacion", align = "right"),
+    Tiempo_Respuesta_Horas = colDef(
+      header = "Tiempo de respuesta \\(\\left( x_{i} \\right) \\)", 
+      align = "right",
+      format = colFormat(
+        separators = TRUE, digits = 2, locales = "es-ES"
+      )
+    ),
+    MR = colDef(
+      header = "Rango Móvil \\(\\left({MR}_{i}\\right)\\)", 
+      align = "right",
+      format = colFormat(
+        separators = TRUE, digits = 2, locales = "es-ES"
+      )
+    )
+  ),
+  striped = TRUE,
+  bordered = TRUE,
+  highlight = TRUE,
+  filterable = TRUE,
+  minRows = 10
+)
+```
+
+Uno de los requisitos para poder hacer un diagrama de control para muestras individuales es que las mismas se distribuyan de manera normal. Por lo que para probar esto se utilizara la prueba de Kolmogorov. La misma se hace en R de la siguiente forma y se tienen los siguientes resultados:
+
+```{r}
+# --- Apply the One-Sample Kolmogorov-Smirnov Test for Normality ---
+
+# The ks.test function requires the mean and standard deviation of the
+# hypothesized normal distribution. We'll use the sample mean and SD
+# as estimates for the population parameters.
+sample_mean <- mean(individual_times$Tiempo_Respuesta_Horas)
+sample_sd <- sd(individual_times$Tiempo_Respuesta_Horas)
+
+# Perform the Kolmogorov-Smirnov test
+# The 'pnorm' function specifies that we are testing against a normal distribution.
+ks_test_result <- ks.test(
+  x = individual_times$Tiempo_Respuesta_Horas,
+  y = "pnorm",
+  mean = sample_mean,
+  sd = sample_sd
+)
+
+# Print the test results
+print(ks_test_result)
+
+# --- Interpretation ---
+cat("\n--- Interpretación de la Prueba de Kolmogorov-Smirnov ---\n")
+cat(paste0("Estadístico D de Kolmogorov-Smirnov: ", round(ks_test_result$statistic, 4), "\n"))
+cat(paste0("Valor p (p-value): ", round(ks_test_result$p.value, 4), "\n"))
+
+# Common significance level (alpha) is 0.05
+alpha <- 0.05
+
+if (ks_test_result$p.value < alpha) {
+  cat(paste0("Dado que el valor p (", round(ks_test_result$p.value, 4), ") es menor que el nivel de significancia (", alpha, "),\n"))
+  cat("rechazamos la hipótesis nula.\n")
+  cat("Esto sugiere que los datos NO provienen de una distribución normal.\n")
+} else {
+  cat(paste0("Dado que el valor p (", round(ks_test_result$p.value, 4), ") es mayor que el nivel de significancia (", alpha, "),\n"))
+  cat("no rechazamos la hipótesis nula.\n")
+  cat("Esto sugiere que los datos SÍ podrían provenir de una distribución normal.\n")
+}
+```
+
+Una vez determinado la existencia de no normalidad de los datos. Se procedera a normalizarlos para fines del analisis a traves de la utilizacion de puntajes Z. Lo cual se hace en R de la siguiente forma:
+
+```{r}
+# --- Calcular Z-scores para normalizar los datos ---
+# Calcular la media y desviación estándar de todos los datos individuales
+mu_x <- mean(individual_times$Tiempo_Respuesta_Horas)
+sigma_x <- sd(individual_times$Tiempo_Respuesta_Horas) # Desviación estándar de la población de la Fase I
+
+# Calcular Z-scores: Z = (X - mu) / sigma
+individual_times <- individual_times |>
+  dplyr::mutate(
+    Z_score = (Tiempo_Respuesta_Horas - mu_x) / sigma_x,
+    MR = c(NA, abs(diff(Z_score)))
+  )
+
+# --- Definir límites de control para el gráfico de Z-scores ---
+# La línea central siempre es 0
+lc_z <- 0
+
+# Los límites de control siempre están en ± k, donde k es típicamente 3 (para 3-sigma)
+k_value <- 3
+lcs_z <- k_value
+lci_z <- -k_value
+
+```
+
+Una vez obtenido los puntajes z y los limites de control, ya es posible graficar los diagramas de control. Los cuales se pueden observar a continuacion:
+
+```{r}
+#| label: fig-MRinicial-highcharter
+#| fig-cap: "Diagrama $\\textit{MR}$ inicial para el tiempo de respuesta a solicitudes de servicio de clientes internos"
+
+highchart() |>
+  hc_add_series(
+    data = individual_times, 
+    hcaes(x = Observacion, low = lc_z, high = lcs_z),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, 
+    name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    hcaes(x = Observacion, low = lci_z, high = lc_z),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, 
+    name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    type = "line", hcaes(x = Observacion, y = lcs_z), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times,
+    type = "line", hcaes(x = Observacion, y = lc_z), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    type = "line", hcaes(x = Observacion, y = lci_z), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times,
+    type = "line", color = "black",
+    hcaes(x = Observacion, y = MR),
+    marker = list(radius = 3),useHTML = TRUE, 
+    name = "<b><i>MR<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Número de Observacion</b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Rango móvil (MR<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+```{r}
+#| label: fig-x-inicial-highcharter
+#| fig-cap: "Diagrama $x$ incial para el tiempo de respuesta a solicitudes de servicio de clientes internos"
+
+highchart() |>
+  hc_add_series(
+    data = individual_times, 
+    hcaes(x = Observacion, low = lc_z, high = lcs_z),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    hcaes(x = Observacion, low = lci_z, high = lc_z),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    type = "line", hcaes(x = Observacion, y = lcs_z), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times,
+    type = "line", hcaes(x = Observacion, y = lc_z), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    type = "line", hcaes(x = Observacion, y = lci_z), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times,
+    type = "line", color = "black", 
+    hcaes(x = Observacion, y = Z_score),
+    marker = list(radius = 3),  useHTML = TRUE, 
+    name = "<b><i>x<sub>i</sub></i></b>", dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Número de observacion</b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Tiempo de respuesta de solicitudes  (x<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+
+### Capacidad del Proceso
+:::
+::::
