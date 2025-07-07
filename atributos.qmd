@@ -288,6 +288,10 @@ highchart() |>
 
 <p style="text-align: justify;">
 
+
+De la @fig-ejemplo-dcnp-highcharter se aprecia que el proceso no funcionó de manera estable, ya que el número de piezas defectuosas en la muestra del lote 12 es mayor que el límite superior; mientras que en la muestra del lote 16 el número de defectuosos es menor que el límite inferior. De aquí que se tenga una evidencia objetiva para afirmar que en la fabricación del lote 12 se presentó una causa o situación especial que normalmente no está presente en el proceso y que lo empeoró de forma seria; mientras que en el lote 16 ocurrió una causa especial que mejoró el desempeño del proceso de fabricación de componentes k12. Es necesario localizar ambas causas, ya que así se estará en posibilidades de prevenir la primera, y en caso de no haber un error en el registro de los datos, fomentar la segunda. Con el fin de establecer una estimación de $p$ que ayude a supervisar las producciones futuras, el diagrama debe ser recalculado a partir de la estimación de $p$, utilizando la @eq-pestnp, eliminando estas observaciones suponiendo como se menciona anteriormente, que tienen causas atribuibles.
+
+
 De la @fig-ejemplo-dcnp-highcharter se aprecia que el proceso no funcionó de manera estable, ya que el número de piezas defectuosas en la muestra del lote 12 es mayor que el límite superior; mientras que en la muestra del lote 16 el número de defectuosos es menor que el límite inferior. De aquí que se tenga una evidencia objetiva para afirmar que en la fabricación del lote 12 se presentó una causa o situación especial que normalmente no está presente en el proceso y que lo empeoró de forma seria; mientras que en el lote 16 ocurrió una causa especial que mejoró el desempeño del proceso de fabricación de componentes k12. Es necesario localizar ambas causas, ya que así se estará en posibilidades de prevenir la primera, y en caso de no haber un error en el registro de los datos, fomentar la segunda. Con el fin de establecer una estimación de $p$ que ayude a supervisar las producciones futuras, el diagrama debe ser recalculado a partir de la estimación de $p$, utilizando la @eq-pestnp, eliminando estas observaciones suponiendo como se menciona anteriormente, que tienen causas atribuibles.
 
 </p>
@@ -373,7 +377,11 @@ highchart() |>
   hc_plotOptions( series = list(animation = FALSE) )
 ```
 
+
 Se observa en la @fig-ejemplo-dcnp2-highcharter que eliminando las observaciones que estuvieron fuera de control, el proceso entra en estado bajo control. Por lo que, se concluye que la estimación de $p$ ($\bar{p}=`r formato(p_est)`$) es correcta para la supervisión futura de la producción de de componentes k12.
+
+Se observa en la @fig-ejemplo-dcnp2-highcharter que eliminando las observaciones que estuvieron fuera de control, el proceso entra en estado bajo control. Por lo que, se concluye que la estimación de $p$ ($\bar{p}=`r formato(p_est)`$) es correcta para la supervisión futura de la producción de de componentes k12. 
+
 :::
 ::::
 
@@ -633,6 +641,10 @@ Se observa en la @fig-ejemplo-dcp2-highcharter que eliminando la observación qu
 
 <p style="text-align: justify;">
 
+
+En una empresa del ramo metalmecánico se fabrican válvulas. Después del proceso de fundición se realiza una inspección y las piezas que no cumplen con ciertas características son rechazadas. Las razones del rechazo son diversas: piezas incompletas, porosas, mal formadas, etc. Para evaluar la variabilidad y la magnitud de la proporción de piezas defectuosas en el proceso de fundición se decide implementar una carta $p$. El proceso de fundición se hace por lotes. En la @tbl-datos-dcp-tmv se muestran los datos obtenidos durante una semana para cierto tipo de válvulas. Aunque regularmente el tamaño de lote es fijo, n = 300, en ocasiones, por diferentes motivos, en algunos lotes se hacen unas cuantas piezas de más o de menos.
+
+
 En una empresa del ramo metalmecánico se fabrican válvulas. Después del proceso de fundición se realiza una inspección y las piezas que no cumplen con ciertas características son rechazadas. Las razones del rechazo son diversas: piezas incompletas, porosas, mal formadas, etc. Para evaluar la variabilidad y la magnitud de la proporción de piezas defectuosas en el proceso de fundición se decide implementar una carta $p$. El proceso de fundición se hace por lotes. En la @tbl-datos-dcp-tmv se muestran los datos obtenidos durante una semana para cierto tipo de válvulas. Aunque regularmente el tamaño de lote es fijo, n = 300, en ocasiones, por diferentes motivos, en algunos lotes se hacen unas cuantas piezas de más o de menos.
 
 </p>
@@ -712,7 +724,11 @@ LCI_i = \bar{p}-3\sqrt{\frac{\bar{p}(1-\bar{p})}{n_i}}
 \end{align}
 $$
 
+
 Se observa en la @tbl-datos-dcp-tmv que las variaciones en los limites de control son mínimas, esto debido a la similitud en los tamaños de muestra. Por ello, resulta más practica la estimación de estos limites utilizando el **promedio de los** $n$ subgrupos. De la siguiente forma:
+
+Se observa en la @tbl-datos-dcp-tmv que las variaciones en los limites de control son mínimas, esto debido a la similitud en los tamaños de muestra. Por ello, resulta más practica la estimación de estos limites utilizando el **promedio de los $n$ subgrupos**. De la siguiente forma:
+
 
 ```{r}
 #| include: FALSE
@@ -1605,3 +1621,5 @@ Como se puede observar en la @fig-ejemplo-dutmv2-highcharter todos los puntos se
 
 ::: {#refs}
 :::
+
+

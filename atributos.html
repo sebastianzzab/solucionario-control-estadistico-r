@@ -57,6 +57,7 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
+
 /* CSS for citations */
 div.csl-bib-body { }
 div.csl-entry {
@@ -77,6 +78,9 @@ div.csl-right-inline {
 div.csl-indent {
   margin-left: 2em;
 }</style>
+
+</style>
+
 
 
 <script src="atributos_files/libs/clipboard/clipboard.min.js"></script>
@@ -262,7 +266,11 @@ window.Quarto = {
   <li><a href="#diagrama-p" id="toc-diagrama-p" class="nav-link" data-scroll-target="#diagrama-p"><span class="header-section-number">1.2</span> Diagrama <span class="math inline">\(p\)</span></a></li>
   <li><a href="#diagrama-c" id="toc-diagrama-c" class="nav-link" data-scroll-target="#diagrama-c"><span class="header-section-number">1.3</span> Diagrama <span class="math inline">\(c\)</span></a></li>
   <li><a href="#diagrama-u" id="toc-diagrama-u" class="nav-link" data-scroll-target="#diagrama-u"><span class="header-section-number">1.4</span> Diagrama <span class="math inline">\(u\)</span></a></li>
+
   <li><a href="#referencias" id="toc-referencias" class="nav-link" data-scroll-target="#referencias">Referencias</a></li>
+
+  <li><a href="#referencias" id="toc-referencias" class="nav-link" data-scroll-target="#referencias"><span class="header-section-number">1.5</span> Referencias</a></li>
+
   </ul></li>
   </ul>
 </nav>
@@ -279,7 +287,11 @@ window.Quarto = {
 </p><p>Este solucionario ha sido elaborado con base en los contenidos presentados en el libro <em>Control Estadístico de la Calidad</em>, desarrollado por el profesor <strong>Oswaldo Bello</strong> como material de apoyo para la asignatura del mismo nombre en la Universidad de Oriente, Núcleo Nueva Esparta.</p>
 <p>Estos ejercicios aplican los conceptos del <a href="https://oswaldobelloc.github.io/libro_cec/">libro de Control Estadístico de la Calidad</a> del profesor Oswaldo Bello, especialmente los relacionados con los diagramas de control para atributos.</p>
 <p>Fue desarrollado por estudiantes de la carrera de Licenciatura en Estadística utilizando Quarto. Contiene ejemplos de los principales diagramas de control para atributos (<code>np</code>, <code>p</code>, <code>c</code>, <code>u</code>), aplicados con el lenguaje de programación R. Cada gráfico fue generado con el paquete <code>highcharter</code>, por su capacidad de generar visualizaciones interactivas y atractivas.</p>
+
 <p>Este material tiene fines tanto evaluativos como educativos, sirviendo de guía para futuros cursos y los ejemplos utilizados fueron extraidos de <span class="citation" data-cites="gutierrez2009control">@gutierrez2009control</span></p>
+
+<p>Este material tiene fines tanto evaluativos como educativos, sirviendo de guía para futuros cursos.</p>
+
 <p></p>
 <section id="diagrama-np" class="level2" data-number="1.1">
 <h2 data-number="1.1" class="anchored" data-anchor-id="diagrama-np"><span class="header-section-number">1.1</span> Diagrama <span class="math inline">\(np\)</span></h2>
@@ -492,8 +504,13 @@ Figura&nbsp;1: Diagrama <span class="math inline">\(np\)</span> para el número 
 </div>
 </div>
 <p style="text-align: justify;">
+
 </p><p>De la <a href="#fig-ejemplo-dcnp-highcharter" class="quarto-xref">Figura&nbsp;1</a> se aprecia que el proceso no funcionó de manera estable, ya que el número de piezas defectuosas en la muestra del lote 12 es mayor que el límite superior; mientras que en la muestra del lote 16 el número de defectuosos es menor que el límite inferior. De aquí que se tenga una evidencia objetiva para afirmar que en la fabricación del lote 12 se presentó una causa o situación especial que normalmente no está presente en el proceso y que lo empeoró de forma seria; mientras que en el lote 16 ocurrió una causa especial que mejoró el desempeño del proceso de fabricación de componentes k12. Es necesario localizar ambas causas, ya que así se estará en posibilidades de prevenir la primera, y en caso de no haber un error en el registro de los datos, fomentar la segunda. Con el fin de establecer una estimación de <span class="math inline">\(p\)</span> que ayude a supervisar las producciones futuras, el diagrama debe ser recalculado a partir de la estimación de <span class="math inline">\(p\)</span>, utilizando la <a href="#eq-pestnp" class="quarto-xref">Ecuación&nbsp;1</a>, eliminando estas observaciones suponiendo como se menciona anteriormente, que tienen causas atribuibles.</p>
 <p></p>
+
+De la <a href="#fig-ejemplo-dcnp-highcharter" class="quarto-xref">Figura&nbsp;1</a> se aprecia que el proceso no funcionó de manera estable, ya que el número de piezas defectuosas en la muestra del lote 12 es mayor que el límite superior; mientras que en la muestra del lote 16 el número de defectuosos es menor que el límite inferior. De aquí que se tenga una evidencia objetiva para afirmar que en la fabricación del lote 12 se presentó una causa o situación especial que normalmente no está presente en el proceso y que lo empeoró de forma seria; mientras que en el lote 16 ocurrió una causa especial que mejoró el desempeño del proceso de fabricación de componentes k12. Es necesario localizar ambas causas, ya que así se estará en posibilidades de prevenir la primera, y en caso de no haber un error en el registro de los datos, fomentar la segunda. Con el fin de establecer una estimación de <span class="math inline">\(p\)</span> que ayude a supervisar las producciones futuras, el diagrama debe ser recalculado a partir de la estimación de <span class="math inline">\(p\)</span>, utilizando la <a href="#eq-pestnp" class="quarto-xref">Ecuación&nbsp;1</a>, eliminando estas observaciones suponiendo como se menciona anteriormente, que tienen causas atribuibles.
+</p>
+
 <p>Al eliminar estas observaciones la nueva estimación de <span class="math inline">\(p\)</span> sería <span class="math inline">\(0,0755\)</span> y los limites de control superior e inferior serían <span class="math inline">\(17,736\)</span> y <span class="math inline">\(0,3751\)</span>, respectivamente.</p>
 <div class="cell">
 <details class="code-fold">
@@ -897,8 +914,13 @@ Figura&nbsp;4: Diagrama <span class="math inline">\(p\)</span> para la cantidad 
 <div id="exm-dcp-tmv" class="Example theorem example">
 <p><span class="theorem-title"><strong>Ejemplo 3 (Aplicación del Diagrama <span class="math inline">\(p\)</span> con Tamaño de Muestra Variable)</strong></span> &nbsp;</p>
 <p style="text-align: justify;">
+
 </p><p>En una empresa del ramo metalmecánico se fabrican válvulas. Después del proceso de fundición se realiza una inspección y las piezas que no cumplen con ciertas características son rechazadas. Las razones del rechazo son diversas: piezas incompletas, porosas, mal formadas, etc. Para evaluar la variabilidad y la magnitud de la proporción de piezas defectuosas en el proceso de fundición se decide implementar una carta <span class="math inline">\(p\)</span>. El proceso de fundición se hace por lotes. En la <a href="#tbl-datos-dcp-tmv" class="quarto-xref">Tabla&nbsp;3</a> se muestran los datos obtenidos durante una semana para cierto tipo de válvulas. Aunque regularmente el tamaño de lote es fijo, n = 300, en ocasiones, por diferentes motivos, en algunos lotes se hacen unas cuantas piezas de más o de menos.</p>
 <p></p>
+
+En una empresa del ramo metalmecánico se fabrican válvulas. Después del proceso de fundición se realiza una inspección y las piezas que no cumplen con ciertas características son rechazadas. Las razones del rechazo son diversas: piezas incompletas, porosas, mal formadas, etc. Para evaluar la variabilidad y la magnitud de la proporción de piezas defectuosas en el proceso de fundición se decide implementar una carta <span class="math inline">\(p\)</span>. El proceso de fundición se hace por lotes. En la <a href="#tbl-datos-dcp-tmv" class="quarto-xref">Tabla&nbsp;3</a> se muestran los datos obtenidos durante una semana para cierto tipo de válvulas. Aunque regularmente el tamaño de lote es fijo, n = 300, en ocasiones, por diferentes motivos, en algunos lotes se hacen unas cuantas piezas de más o de menos.
+</p>
+
 <div class="cell" data-tbl-align="left">
 <details class="code-fold">
 <summary>Código</summary>
@@ -1196,7 +1218,11 @@ LC = \bar{p} \\
 LCI_i = \bar{p}-3\sqrt{\frac{\bar{p}(1-\bar{p})}{n_i}}
 \end{align}
 \]</span></p>
+
 <p>Se observa en la <a href="#tbl-datos-dcp-tmv" class="quarto-xref">Tabla&nbsp;3</a> que las variaciones en los limites de control son mínimas, esto debido a la similitud en los tamaños de muestra. Por ello, resulta más practica la estimación de estos limites utilizando el <strong>promedio de los</strong> <span class="math inline">\(n\)</span> subgrupos. De la siguiente forma:</p>
+
+<p>Se observa en la <a href="#tbl-datos-dcp-tmv" class="quarto-xref">Tabla&nbsp;3</a> que las variaciones en los limites de control son mínimas, esto debido a la similitud en los tamaños de muestra. Por ello, resulta más practica la estimación de estos limites utilizando el <strong>promedio de los <span class="math inline">\(n\)</span> subgrupos</strong>. De la siguiente forma:</p>
+
 <p><span id="eq-nest"><span class="math display">\[
 \begin{equation}
 \bar{n}=\frac{\sum_{i}^{m}n_i}{m}
@@ -1368,7 +1394,11 @@ Figura&nbsp;5: Diagrama <span class="math inline">\(p\)</span> para el número d
 <span id="cb17-40"><a href="#cb17-40"></a><span class="in">)</span></span>
 <span id="cb17-41"><a href="#cb17-41"></a><span class="in">```</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
+
 <div id="tbl-datos-ejemplo-dcc" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-tbl-cap-align="left" data-tbl-align="left">
+
+<div id="tbl-datos-ejemplo-dcc" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-tbl-align="left" data-tbl-cap-align="left">
+
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-datos-ejemplo-dcc-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Tabla&nbsp;4: Número promedio de operaciones por trabajador por día y semana
@@ -1694,7 +1724,11 @@ Figura&nbsp;7: Diagrama <span class="math inline">\(c\)</span> para el número d
 <span id="cb24-42"><a href="#cb24-42"></a><span class="in">)</span></span>
 <span id="cb24-43"><a href="#cb24-43"></a><span class="in">```</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
+
 <div id="tbl-datos-ejemplo1-dcu" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-tbl-cap-align="left" data-tbl-align="left">
+
+<div id="tbl-datos-ejemplo1-dcu" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-tbl-align="left" data-tbl-cap-align="left">
+
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-datos-ejemplo1-dcu-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Tabla&nbsp;5: Número de rugosidades encontradas en los lotes producidos en dos semanas
@@ -2170,11 +2204,16 @@ Figura&nbsp;10: Diagrama <span class="math inline">\(u\)</span> para el número 
 </div>
 </div>
 </section>
+
 <section id="referencias" class="level2 unnumbered">
 <h2 class="unnumbered anchored" data-anchor-id="referencias">Referencias</h2>
 <div id="refs" role="list">
 
 </div>
+
+<section id="referencias" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="referencias"><span class="header-section-number">1.5</span> Referencias</h2>
+
 </section>
 </section>
 
