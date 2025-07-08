@@ -1569,84 +1569,91 @@ reactable::reactable(
 )
 ```
 
-Uno de los requisitos para poder hacer un diagrama de control para muestras individuales es que las mismas se distribuyan de manera normal. Por lo que para probar esto se utilizara la prueba de Kolmogorov. La misma se hace en R de la siguiente forma y se tienen los siguientes resultados:
+Para estimar los parametros del diagrama es necesario calcular la media de la variable de interes, en este caso el tiempo de respuesta, y la media de los rangos moviles, este calculo es bastante sencillo, teniendo entonces $\bar{x}$= `r formato(mean(individual_times$Tiempo_Respuesta_Horas))` y $\overline{MR}$= `r formato(mean(individual_times$MR,na.rm = TRUE))` 
+
+Los limites para el diagrama $x$ inicial se calculan de la siguiente forma:
+
+$$
+\begin{align*}
+LCS  & =  \bar{x} + 2,6596 \, \overline{MR} \\
+LC  & =  \bar{x} \\
+LCI  & = \bar{x} - 2,6596\, \overline{MR} 
+\end{align*}
+$$ {#eq-lsxmr}
+
+Mediante R, se calculan utilizando el siguiente bloque de código:
 
 ```{r}
-# --- Apply the One-Sample Kolmogorov-Smirnov Test for Normality ---
+#| label: lci-x
 
-# The ks.test function requires the mean and standard deviation of the
-# hypothesized normal distribution. We'll use the sample mean and SD
-# as estimates for the population parameters.
-sample_mean <- mean(individual_times$Tiempo_Respuesta_Horas)
-sample_sd <- sd(individual_times$Tiempo_Respuesta_Horas)
+xbarra <- mean(individual_times$Tiempo_Respuesta_Horas)
+MRbarra <- mean(individual_times$MR, na.rm = TRUE)
+desviacion <- MRbarra / 1.128
 
-# Perform the Kolmogorov-Smirnov test
-# The 'pnorm' function specifies that we are testing against a normal distribution.
-ks_test_result <- ks.test(
-  x = individual_times$Tiempo_Respuesta_Horas,
-  y = "pnorm",
-  mean = sample_mean,
-  sd = sample_sd
+lci <- xbarra - 2.6596 * MRbarra
+lc <-  xbarra
+lcs <- xbarra + 2.6596 * MRbarra
+paste0("LCI = ", formato(lci), "    LC = ", formato(lc), "    LCS = ", formato(lcs))
+```
+
+Manualmente, estos limites se calculan de la siguiente forma:
+
+$$
+\begin{align*}
+LCS  & =  \bar{x} + 2,6596 \, \overline{MR} = `r formato(xbarra)`+2,6596*`r formato(MRbarra)`= `r formato(lcs)` \\
+LC  & =  \bar{x} = `r formato(lc)` \\ 
+LCI  & = \bar{x} - 2,6596\, \overline{MR} = `r formato(xbarra)`-2,6596*`r formato(MRbarra)`= `r formato(lci)`
+\end{align*}
+$$
+Los limites para el diagrama inicial $MR$ se obtienen de la siguiente forma:
+$$
+\begin{align*}
+LCS  & = 3,2677 \, \overline{MR}\\
+LC  & = \overline{MR} \\
+LCI  & = 0
+\end{align*}.
+$$ {#eq-lsxmr1}
+
+Utilizando Rstudio, se calculan utilizando el siguiente bloque de código: 
+
+```{r}
+#| label: lci-MR
+
+lci_MR <- 0
+lc_MR <- MRbarra
+lcs_MR <- 3.2677 * MRbarra
+paste0(
+  "LCI = ", formato(lci_MR), "    LC = ", formato(lc_MR), "    LCS = ", formato(lcs_MR)
 )
-
-# Print the test results
-print(ks_test_result)
-
-# --- Interpretation ---
-cat("\n--- Interpretación de la Prueba de Kolmogorov-Smirnov ---\n")
-cat(paste0("Estadístico D de Kolmogorov-Smirnov: ", round(ks_test_result$statistic, 4), "\n"))
-cat(paste0("Valor p (p-value): ", round(ks_test_result$p.value, 4), "\n"))
-
-# Common significance level (alpha) is 0.05
-alpha <- 0.05
-
-if (ks_test_result$p.value < alpha) {
-  cat(paste0("Dado que el valor p (", round(ks_test_result$p.value, 4), ") es menor que el nivel de significancia (", alpha, "),\n"))
-  cat("rechazamos la hipótesis nula.\n")
-  cat("Esto sugiere que los datos NO provienen de una distribución normal.\n")
-} else {
-  cat(paste0("Dado que el valor p (", round(ks_test_result$p.value, 4), ") es mayor que el nivel de significancia (", alpha, "),\n"))
-  cat("no rechazamos la hipótesis nula.\n")
-  cat("Esto sugiere que los datos SÍ podrían provenir de una distribución normal.\n")
-}
 ```
 
-Una vez determinado la existencia de no normalidad de los datos. Se procedera a normalizarlos para fines del analisis a traves de la utilizacion de puntajes Z. Lo cual se hace en R de la siguiente forma:
+Manualmente, se obtienen mediante el siguiente calculo:
 
-```{r}
-# --- Calcular Z-scores para normalizar los datos ---
-# Calcular la media y desviación estándar de todos los datos individuales
-mu_x <- mean(individual_times$Tiempo_Respuesta_Horas)
-sigma_x <- sd(individual_times$Tiempo_Respuesta_Horas) # Desviación estándar de la población de la Fase I
+$$
+\begin{align*}
+LCS  & = 3,2677 \, \overline{MR}= 3,2677*`r formato(MRbarra)`= `r formato(lcs_MR)`\\
+LC  & = \overline{MR} = `r formato(lc_MR)` \\ 
+LCI  & = 0
+\end{align*}.
+$$
+La estimación de la desviación viene dada por la siguiente expresión:
 
-# Calcular Z-scores: Z = (X - mu) / sigma
-individual_times <- individual_times |>
-  dplyr::mutate(
-    Z_score = (Tiempo_Respuesta_Horas - mu_x) / sigma_x,
-    MR = c(NA, abs(diff(Z_score)))
-  )
+$$
+\begin{equation}
+\hat{\sigma}=\frac{\overline{\textit{MR}}}{1,1284} = \frac{`r MRbarra`}{1,1284}=`r formato(desviacion)`
+\end{equation}
+$$
 
-# --- Definir límites de control para el gráfico de Z-scores ---
-# La línea central siempre es 0
-lc_z <- 0
-
-# Los límites de control siempre están en ± k, donde k es típicamente 3 (para 3-sigma)
-k_value <- 3
-lcs_z <- k_value
-lci_z <- -k_value
-
-```
-
-Una vez obtenido los puntajes z y los limites de control, ya es posible graficar los diagramas de control. Los cuales se pueden observar a continuacion:
+Una vez los limites de control, ya es posible graficar los diagramas de control. Los cuales se pueden observar a continuacion:
 
 ```{r}
 #| label: fig-MRinicial-highcharter
-#| fig-cap: "Diagrama $\\textit{MR}$ inicial para el tiempo de respuesta a solicitudes de servicio de clientes internos"
+#| fig-cap: "Diagrama $\\textit{MR}$ inicial para el tiempo de respuesta a solicitudes de servicio de clientes internos con el paquete `highcharter`"
 
 highchart() |>
   hc_add_series(
     data = individual_times, 
-    hcaes(x = Observacion, low = lc_z, high = lcs_z),
+    hcaes(x = Observacion, low = lc_MR, high = lcs_MR),
     step = "hv", marker = list(enabled = FALSE, visible = FALSE),
     type = "arearange", fillOpacity = 0.2, 
     name = "", color = "green",
@@ -1654,7 +1661,7 @@ highchart() |>
   ) |>
   hc_add_series(
     data = individual_times, 
-    hcaes(x = Observacion, low = lci_z, high = lc_z),
+    hcaes(x = Observacion, low = lci_MR, high = lc_MR),
     step = "hv", marker = list(enabled = FALSE, visible = FALSE),
     type = "arearange", fillOpacity = 0.2, 
     name = "", color = "blue",
@@ -1662,21 +1669,21 @@ highchart() |>
   ) |>
   hc_add_series(
     data = individual_times, 
-    type = "line", hcaes(x = Observacion, y = lcs_z), useHTML = TRUE,
+    type = "line", hcaes(x = Observacion, y = lcs_MR), useHTML = TRUE,
     color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
     step = "hv", marker = list(enabled = FALSE),
     tooltip = list(valueDecimals = 2)
   ) |>
   hc_add_series(
     data = individual_times,
-    type = "line", hcaes(x = Observacion, y = lc_z), useHTML = TRUE,
+    type = "line", hcaes(x = Observacion, y = lc_MR), useHTML = TRUE,
     color = "blue", name = "<b><i>LC</b></i>",
     step = "hv", marker = list(enabled = FALSE),
     tooltip = list(valueDecimals = 2)
   ) |>
   hc_add_series(
     data = individual_times, 
-    type = "line", hcaes(x = Observacion, y = lci_z), useHTML = TRUE,
+    type = "line", hcaes(x = Observacion, y = lci_MR), useHTML = TRUE,
     color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
     step = "hv", marker = list(enabled = FALSE),
     tooltip = list(valueDecimals = 2)
@@ -1706,42 +1713,44 @@ highchart() |>
   hc_plotOptions(series = list(animation = FALSE) )
 ```
 
+Como se puede observar en la @fig-MRinicial-highcharter, el diagrama de control $MR$ inicial muestra que **todos los puntos están dentro de los límites de control**, lo que indica que el proceso está bajo control estadístico. Esto significa que la variabilidad del proceso es consistente y no hay evidencia de causas especiales que afecten el rango móvil entre observaciones consecutivas.
+
 ```{r}
 #| label: fig-x-inicial-highcharter
-#| fig-cap: "Diagrama $x$ incial para el tiempo de respuesta a solicitudes de servicio de clientes internos"
+#| fig-cap: "Diagrama $x$ incial para el tiempo de respuesta a solicitudes de servicio de clientes internos con el paquete `highcharter`"
 
 highchart() |>
   hc_add_series(
     data = individual_times, 
-    hcaes(x = Observacion, low = lc_z, high = lcs_z),
+    hcaes(x = Observacion, low = lc, high = lcs),
     step = "hv", marker = list(enabled = FALSE, visible = FALSE),
     type = "arearange", fillOpacity = 0.2, name = "", color = "green",
     showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
   ) |>
   hc_add_series(
     data = individual_times, 
-    hcaes(x = Observacion, low = lci_z, high = lc_z),
+    hcaes(x = Observacion, low = lci, high = lc),
     step = "hv", marker = list(enabled = FALSE, visible = FALSE),
     type = "arearange", fillOpacity = 0.2, name = "", color = "blue",
     showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
   ) |>
   hc_add_series(
     data = individual_times, 
-    type = "line", hcaes(x = Observacion, y = lcs_z), useHTML = TRUE,
+    type = "line", hcaes(x = Observacion, y = lcs), useHTML = TRUE,
     color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
     step = "hv", marker = list(enabled = FALSE),
     tooltip = list(valueDecimals = 2)
   ) |>
   hc_add_series(
     data = individual_times,
-    type = "line", hcaes(x = Observacion, y = lc_z), useHTML = TRUE,
+    type = "line", hcaes(x = Observacion, y = lc), useHTML = TRUE,
     color = "blue", name = "<b><i>LC</b></i>",
     step = "hv", marker = list(enabled = FALSE),
     tooltip = list(valueDecimals = 2)
   ) |>
   hc_add_series(
     data = individual_times, 
-    type = "line", hcaes(x = Observacion, y = lci_z), useHTML = TRUE,
+    type = "line", hcaes(x = Observacion, y = lci), useHTML = TRUE,
     color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
     step = "hv", marker = list(enabled = FALSE),
     tooltip = list(valueDecimals = 2)
@@ -1749,7 +1758,7 @@ highchart() |>
   hc_add_series(
     data = individual_times,
     type = "line", color = "black", 
-    hcaes(x = Observacion, y = Z_score),
+    hcaes(x = Observacion, y = Tiempo_Respuesta_Horas),
     marker = list(radius = 3),  useHTML = TRUE, 
     name = "<b><i>x<sub>i</sub></i></b>", dashStyle = "Dash",
     tooltip = list(valueDecimals = 2)
@@ -1770,6 +1779,331 @@ highchart() |>
   hc_plotOptions(series = list(animation = FALSE) )
 ```
 
+El diagrama de control $x$ inicial, como se muestra en la @fig-x-inicial-highcharter, indica que el punto numero 49 esta fuera de los limites de control. Esto sugiere que el proceso de respuesta a solicitudes de servicio no está bajo control estadístico, y la media del tiempo de respuesta no es consistente a lo largo del tiempo.
+
+Se calculan nuevamente los limites para el diagrama $x$ y $MR$ eliminando el punto 49, que es el único punto fuera de los limites de control:
+
+```{r}
+#| label: lci-MR-pre-def
+individual_times1 <- individual_times[-49]
+xbarra <- mean(individual_times1$Tiempo_Respuesta_Horas)
+MRbarra <- mean(individual_times1$MR, na.rm = TRUE)
+desviacion <- MRbarra / 1.128
+
+lci <- xbarra - 2.6596 * MRbarra
+lc <-  xbarra
+lcs <- xbarra + 2.6596 * MRbarra
+paste0("LCI = ", formato(lci), "    LC = ", formato(lc), "    LCS = ", formato(lcs))
+```
+
+Los nuevos limites para el diagrama $x$ son:
+
+```{r}
+#| label: lci-x-pre-def
+lci_MR <- 0
+lc_MR <- MRbarra
+lcs_MR <- 3.2677 * MRbarra
+paste0(
+  "LCI = ", formato(lci_MR), "    LC = ", formato(lc_MR), "    LCS = ", formato(lcs_MR)
+)
+```
+
+```{r}
+#| label: fig-MRinicial-highcharter-pre-def
+#| fig-cap: "Diagrama $\\textit{MR}$ inicial para el tiempo de respuesta a solicitudes de servicio de clientes internos con el paquete `highcharter`"
+
+highchart() |>
+  hc_add_series(
+    data = individual_times1, 
+    hcaes(x = Observacion, low = lc_MR, high = lcs_MR),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, 
+    name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times1, 
+    hcaes(x = Observacion, low = lci_MR, high = lc_MR),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, 
+    name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times1, 
+    type = "line", hcaes(x = Observacion, y = lcs_MR), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times1,
+    type = "line", hcaes(x = Observacion, y = lc_MR), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times1, 
+    type = "line", hcaes(x = Observacion, y = lci_MR), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times1,
+    type = "line", color = "black",
+    hcaes(x = Observacion, y = MR),
+    marker = list(radius = 3),useHTML = TRUE, 
+    name = "<b><i>MR<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Número de Observacion</b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Rango móvil (MR<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+
+```{r}
+#| label: fig-x-inicial-highcharter-pre-def
+#| fig-cap: "Diagrama $x$ incial para el tiempo de respuesta a solicitudes de servicio de clientes internos con el paquete `highcharter`"
+
+highchart() |>
+  hc_add_series(
+    data = individual_times1, 
+    hcaes(x = Observacion, low = lc, high = lcs),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times1, 
+    hcaes(x = Observacion, low = lci, high = lc),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times1, 
+    type = "line", hcaes(x = Observacion, y = lcs), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times1,
+    type = "line", hcaes(x = Observacion, y = lc), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times1, 
+    type = "line", hcaes(x = Observacion, y = lci), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times1,
+    type = "line", color = "black", 
+    hcaes(x = Observacion, y = Tiempo_Respuesta_Horas),
+    marker = list(radius = 3),  useHTML = TRUE, 
+    name = "<b><i>x<sub>i</sub></i></b>", dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Número de observacion</b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Tiempo de respuesta de solicitudes  (x<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+Al observar la @fig-x-inicial-highcharter-pre-def se tiene que el punto 59 esta fuera de control. A partir de este paso se requieren de una serie de iteraciones para poder obtener un diagrama de control $x$ y $MR$ que cumpla con los requisitos de control estadístico. Se utilizo en la parte de analisis del statgraphics correspondiente para el analisis de este diagrama, que exluyera automaticamente segun hubieran puntos fuera de control. Este proceso iterativo determino que las mediciones excluidas son la 4,5,6,7,8,9,10,13,19,20, 27,28,30,31,32,35,40,41,46,49,50,53,58,59,64 y 65.
+
+Se calculan nuevamente los limites para el diagrama $x$ y $MR$ eliminando los puntos fuera de control, que son los puntos 4,5,6,7,8,9,10,13,19,20,27,28,30,31,32,35,40,41,46,49,50,53,58,59,64 y 65:
+
+```{r}
+#| label: lci-MR-def
+individual_times <- individual_times[-c(4,5,6,7,8,9,10,13,19,20,27,28,30,31,32,35,40,41,46,49,50,53,58,59,64,65)]
+
+xbarra <- mean(individual_times$Tiempo_Respuesta_Horas)
+MRbarra <- mean(individual_times$MR, na.rm = TRUE)
+desviacion <- MRbarra / 1.128
+
+lci <- xbarra - 2.6596 * MRbarra
+lc <-  xbarra
+lcs <- xbarra + 2.6596 * MRbarra
+paste0("LCI = ", formato(lci), "    LC = ", formato(lc), "    LCS = ", formato(lcs))
+```
+
+Los nuevos limites para el diagrama $x$ son:
+
+```{r}
+#| label: lci-x-def
+lci_MR <- 0
+lc_MR <- MRbarra
+lcs_MR <- 3.2677 * MRbarra
+paste0(
+  "LCI = ", formato(lci_MR), "    LC = ", formato(lc_MR), "    LCS = ", formato(lcs_MR)
+)
+```
+
+Se grafican los diagramas de control $x$ y $MR$ con los nuevos limites de control:
+
+```{r}
+#| label: fig-MRinicial-highcharter-def
+#| fig-cap: "Diagrama $\\textit{MR}$ inicial para el tiempo de respuesta a solicitudes de servicio de clientes internos con el paquete `highcharter`"
+
+highchart() |>
+  hc_add_series(
+    data = individual_times, 
+    hcaes(x = Observacion, low = lc_MR, high = lcs_MR),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, 
+    name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    hcaes(x = Observacion, low = lci_MR, high = lc_MR),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, 
+    name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    type = "line", hcaes(x = Observacion, y = lcs_MR), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times,
+    type = "line", hcaes(x = Observacion, y = lc_MR), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    type = "line", hcaes(x = Observacion, y = lci_MR), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times,
+    type = "line", color = "black",
+    hcaes(x = Observacion, y = MR),
+    marker = list(radius = 3),useHTML = TRUE, 
+    name = "<b><i>MR<sub>i</sub></i></b>",
+    dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Número de Observacion</b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Rango móvil (MR<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions(series = list(animation = FALSE) )
+```
+
+
+
+```{r}
+#| label: fig-x-inicial-highcharter-def
+#| fig-cap: "Diagrama $x$ incial para el tiempo de respuesta a solicitudes de servicio de clientes internos con el paquete `highcharter`"
+
+highchart() |>
+  hc_add_series(
+    data = individual_times, 
+    hcaes(x = Observacion, low = lc, high = lcs),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    hcaes(x = Observacion, low = lci, high = lc),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    type = "line", hcaes(x = Observacion, y = lcs), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times,
+    type = "line", hcaes(x = Observacion, y = lc), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times, 
+    type = "line", hcaes(x = Observacion, y = lci), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCI</b></i>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_add_series(
+    data = individual_times,
+    type = "line", color = "black", 
+    hcaes(x = Observacion, y = Tiempo_Respuesta_Horas),
+    marker = list(radius = 3),  useHTML = TRUE, 
+    name = "<b><i>x<sub>i</sub></i></b>", dashStyle = "Dash",
+    tooltip = list(valueDecimals = 2)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Número de observacion</b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Tiempo de respuesta de solicitudes  (x<sub>i</sub>)</i></b><br>"
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions(series = list(animation = FALSE) )
+```
 
 ### Capacidad del Proceso
 :::
