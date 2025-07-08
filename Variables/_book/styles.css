@@ -50,3 +50,11 @@ body {
   overflow-x: auto;
   box-sizing: border-box;
 }
+p {
+  text-align: justify !important; /* Justifica el texto de todos los párrafos */
+}
+
+.scrollable-code {
+  max-height: 400px; /* Adjust this value as needed */
+  overflow-y: auto;  /* Add vertical scrollbar if content exceeds max-height */
+}
