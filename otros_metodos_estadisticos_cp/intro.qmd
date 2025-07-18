@@ -1,0 +1,10 @@
+# Introducción 
+
+En el entorno industrial actual, donde la eficiencia y la calidad son pilares de la competitividad, el Control Estadístico de Procesos (CEP) se consolida como una estrategia fundamental para asegurar productos y servicios consistentes. Su enfoque permite no solo detectar desviaciones en los procesos, sino anticiparse a ellas mediante herramientas estadísticas de monitoreo continuo.
+
+Este libro se centra en tres técnicas avanzadas del CEP: los diagramas de control CUSUM, EWMA y el estadístico multivariado $T^2$ de Hotelling. Estas metodologías son especialmente útiles cuando se requiere una detección temprana de cambios pequeños en la media o en la estructura del proceso, así como cuando se manejan múltiples variables de forma simultánea.
+
+La propuesta de esta obra es eminentemente práctica. A través del uso del lenguaje de programación R y la plataforma Quarto, se resuelven ejercicios que guían al lector desde la organización de los datos hasta la interpretación gráfica de los resultados. Cada ejemplo está diseñado para fortalecer la comprensión técnica y facilitar su aplicación en contextos reales.
+
+Este material está dirigido a estudiantes, docentes y profesionales interesados en aplicar técnicas modernas de control estadístico mediante herramientas computacionales de código abierto, fomentando un aprendizaje reproducible y alineado con las exigencias actuales del análisis de calidad.
+

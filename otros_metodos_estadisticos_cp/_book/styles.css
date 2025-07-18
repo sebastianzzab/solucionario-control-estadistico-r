@@ -1,0 +1,15 @@
+/* styles.css */
+
+/* Justifica el texto de los párrafos en todo el documento */
+p {
+  text-align: justify !important;
+}
+
+/* 
+  LA REGLA CORRECTA Y DEFINITIVA PARA LA TABLA REACTABLE:
+  Añade una barra de scroll horizontal al contenedor que crea la librería reactable 
+  cuando la tabla es demasiado ancha.
+*/
+.reactable-container {
+  overflow-x: auto !important; /* 'auto' muestra el scroll solo si es necesario */
+}

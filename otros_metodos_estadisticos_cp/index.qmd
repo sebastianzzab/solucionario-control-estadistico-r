@@ -1,0 +1,7 @@
+# Prefacio {.unnumbered}
+
+Este trabajo surge del interés por integrar la teoría del Control Estadístico de Procesos con herramientas computacionales modernas. A lo largo de la asignatura Control Estadístico de la Calidad en la Universidad de Oriente, comprendí que más allá de los cálculos manuales, el uso de R permite automatizar, visualizar e interpretar los resultados de manera más eficaz.
+
+Esta guía reúne ejercicios resueltos sobre los diagramas CUSUM, EWMA y $T^2$ de Hotelling, con el objetivo de facilitar su comprensión y aplicación práctica. Cada ejemplo busca ser un puente entre el aprendizaje académico y los desafíos reales del análisis de procesos en la industria.
+
+Mi agradecimiento al profesor Oswaldo Bello por su orientación y por motivar el uso de herramientas como R en el estudio del control de calidad.
