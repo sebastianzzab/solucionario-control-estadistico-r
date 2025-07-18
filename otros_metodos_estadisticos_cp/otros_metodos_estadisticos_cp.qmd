@@ -1,0 +1,912 @@
+---
+title: "Otros Métodos Estadísticos de Control de Procesos Aplicados con ${\\color{Blue} \\textbf{\\textsf{R}}}$"
+format: html
+---
+
+# Otros Métodos Estadísticos de Control de Procesos
+
+En los capítulos anteriores hemos explorado los diagramas de control de Shewhart, tanto para variables $(\bar{X}-R$, $\bar{X}-S)$ como para atributos $(p, np, u, c)$. Si bien estas herramientas son fundamentales, su principal deficiencia radica en su relativa insensibilidad para detectar de forma rápida los cambios pequeños pero persistentes en los parámetros del proceso.
+
+Para superar esta limitación, en esta sección nos adentraremos en métodos estadísticos alternativos que ofrecen mayor potencia. Específicamente, estudiaremos los diagramas de control CUSUM y EWMA, diseñados para detectar pequeños desplazamientos, y el diagrama T² de Hotelling para el control de procesos multivariados.
+
+```{r}
+#| label: knitr-opts-chunk-set
+#| include: false
+#| echo: false
+
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, results = "asis")
+```
+
+En el siguiente bloque de código se cargan todas las librerías o paquetes necesarios para el desarrollo de este capitulo, si no se tiene instalado alguno de ellos se instalaran automáticamente.
+
+```{r}
+#| label: carga-paquetes-necesarios
+#| message: false
+#| warning: false
+# Funcion para instalar  y/o cargar el paquete pacman
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
+# Funcion para cargar (o instalar y cargar) los paquetes que vamos a usar a traves de la funcion del paquete pacman
+library(pacman)
+pacman::p_load(ggplot2,ggfortify, DT, reshape2, knitr,  tidyverse, ggQC, pammtools, latex2exp, data.table, reactable, htmlwidgets, htmltools, highcharter, tinytex, qcc, kableExtra,mvtnorm)
+```
+
+Del mismo modo, se crea una base de datos .bib para los paquetes de R que se están utilizando en este capitulo, la cual se puede usar para crear una bibliografía al final del capitulo.
+
+```{r}
+#| label: creacion-bibliografias
+
+# Crear automaticamente una base de datos bib para los paquetes de R 
+knitr::write_bib(
+  c(
+    .packages(), "knitr", "tidyverse", "qcc", "ggQC", "plotly",
+    "highcharter", "kableExtra", "data.table", "pacman",
+    "renv", "pammtools", "htmlwidgets", "htmltools", "data.table",
+    "RColorBrewer", "latex2exp", "tinytex", "reactable"
+  ),
+  "packages.bib"
+)
+
+```
+
+Por otro lado, aqui se crean funciones propias para darle formato a las salidas imprimidas en pantalla. las cuales se pueden usar en cualquier parte del capitulo.
+
+```{r}
+#| label: funciones-creadas
+
+# funcion para ajustar fill-opacity usando css
+fillOpacity <- function(., alpha = 0.5) {
+  css <- sprintf("<style> .js-fill { fill-opacity: %s}
+!important; } </style>", alpha)
+  prependContent(., HTML(css))
+}
+
+# funcion para dar formato a numero
+formato <- function(x, digits = 4) {
+  if (!is.numeric(x)) stop("¡La entrada debe ser numerica!")
+  format(
+    round(x, digits = digits),
+    mode = "double",
+    big.mark = ".",
+    decimal.mark = ","
+  )
+}
+
+```
+
+## Diagrama de Control CUSUM para monitorear la Media del Proceso
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dcmas .Example}
+### Aplicación del Diagrama de Control CUSUM para monitorear la Media del Proceso
+
+A cierto producto químico orgánico comercial se le mide cada cuatro horas el nivel de una sustancia relacionada con su pureza. Los datos de 22 muestras se encuentran en la @tbl-datos-iniciales-cusum. Dado que el valor objetivo de esta sustancia es 15 y que se conoce que la desviación estándar es de alrededor de 1, construya la carta CUSUM para estos datos. Use k = 0.5 y h = 5. Aplique la CUSUM en forma tabular.Este ejemplo fue tomado de @gutierrez2009control.
+
+```{r}
+#| label: tbl-datos-iniciales-cusum
+#| tbl-cap: "Nivel de una sustancia relacionada con la pureza de cierto producto químico orgánico comercial"
+#| table-caption: left
+#| class: output
+
+
+# Se definen los parámetros del problema para fácil acceso y modificación
+mu0 <- 15  # Valor objetivo
+k <- 0.5   # Valor de referencia (allowance)
+h <- 5     # Límite de decisión
+
+data_cusum_raw <- tibble::tibble(
+  `muestra` = 1:22,
+  `x_i` = c(
+    15.3, 15.7, 14.4, 14.0, 15.2, 15.8, 16.7, 16.6, 15.9,
+    17.4, 15.7, 15.9, 14.7, 15.2, 14.6, 13.7, 12.9, 13.2,
+    14.1, 14.2, 13.8, 14.6)
+)
+data_cusum_prelim <- data_cusum_raw |>
+  dplyr::mutate(
+    `col_b` = x_i - mu0,
+    `col_c` = cumsum(col_b)
+  ) |>
+  data.table::data.table()
+
+knitr::kable(
+  data_cusum_prelim,
+  format = "markdown",
+  digits = 4,
+  format.args = list(decimal.mark = ",", big.mark = "."),
+  col.names = c(
+    "$Muestra \\: (i)$", "$(a)\\:x_i$", "$(b)\\:x_i - 15$",
+    "$(c)\\: \\sum_{j=1}^{i} (x_j - 15)$"
+  ),
+  align = "cccc",
+  escape = FALSE
+)
+```
+
+Una vez que se tienen los datos, se procede a construir la tabla con todos los calculos relacionados directamente para la construccion del diagrama CUSUM, los cuales se pueden ver a continuación:
+
+```{r}
+#| label: tbl-datos-cusum
+#| tbl-cap:  "Cálculos para el diagrama CUSUM tabular"
+#| tbl-align: left
+
+cusum_stats <- function(x, mu_0 = 0, K, C_0 = 0) {
+  c_mas <- numeric(length = length(x))
+  n_mas <- numeric(length = length(x))
+  c_menos <- numeric(length = length(x))
+  n_menos <- numeric(length = length(x))
+  c_mas[1] <- max(0, x[1] - (mu_0 + K) + C_0)
+  n_mas[1] <- ifelse(c_mas[1] == 0, 0, 1)
+  c_menos[1] <- max(0, (mu_0 - K) - x[1] + C_0)
+  n_menos[1] <- ifelse(c_menos[1] == 0, 0, 1)
+  for (i in 2:length(x)) {
+    c_mas[i] <- max(0, x[i] - (mu_0 + K) + c_mas[i - 1])
+    n_mas[i] <- ifelse(c_mas[i] != 0, 1 + n_mas[i - 1], 0)
+    c_menos[i] <- max(0, (mu_0 - K) - x[i] + c_menos[i - 1])
+    n_menos[i] <- ifelse(c_menos[i] != 0, 1 + n_menos[i - 1], 0)
+  }
+  return(list(c_mas = c_mas, n_mas = n_mas, c_menos = c_menos, n_menos = n_menos))
+}
+
+cusum_calcs <- cusum_stats(data_cusum_raw$x_i, mu_0 = mu0, K = k)
+
+data_cusum_tabular <- data_cusum_raw |>
+  dplyr::mutate(
+    # Columnas intermedias para la tabla
+    col_b = x_i - (mu0 + k),
+    c_mas = cusum_calcs$c_mas,
+    n_mas = cusum_calcs$n_mas,
+    col_c = (mu0 - k) - x_i,
+    c_menos = cusum_calcs$c_menos,
+    n_menos = cusum_calcs$n_menos
+  ) |>
+  data.table::data.table()
+
+
+knitr::kable(  data_cusum_tabular,
+  format = "markdown",
+  digits = 4,
+  format.args = list(decimal.mark = ",", big.mark = "."),
+  col.names = c(
+    "Periodo ($i$)", "$x_i$", "$x_i - (\\mu_0+k) = x_i - 15,5$",
+    "$C_i^+$", "$N^+$", "$(\\mu_0-k) - x_i = 14,5 - x_i$", "$C_i^-$",
+    "$N^-$"
+  ),
+  align = "cccccccc",
+  escape = FALSE
+)
+
+
+```
+
+Una vez que ya se han calculado cada uno de los elementos necesarios para realizar el diagrama de control cusum con el paquete `highcharter`, se procede a hacerlo. El cual se puede ver a continuación:
+
+```{r}
+#| label: fig-cusum-tabular-highcharter
+#| fig-cap: "Diagrama de control CUSUM para el Nivel de una sustancia relacionada con la pureza de cierto producto químico orgánico comercial"
+
+# Definir color de puntos fuera de control usando el parámetro h
+color <- ifelse(
+  data_cusum_tabular$c_mas > h | data_cusum_tabular$c_menos > h, 
+  "#FF0000", # Rojo para puntos fuera de control
+  "#0000FF"  # Azul para puntos en control
+)
+
+highchart() |>
+  # Límites de control H y -H 
+  hc_add_series(
+    data = data_cusum_tabular,
+    type = "line", hcaes(x = muestra, y = h), 
+    useHTML = TRUE, color = "red", 
+    dashStyle = "Dash", name = "<b><i>H</i></b>",
+    marker = list(enabled = FALSE)
+  ) |>
+  hc_add_series(
+    data = data_cusum_tabular,
+    type = "line", hcaes(x = muestra, y = -h), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", 
+    name = "<b><i>-H</i></b>",
+    marker = list(enabled = FALSE)
+  ) |>
+  
+  hc_add_series(
+    data = data_cusum_tabular, 
+    type = "errorbar",
+    hcaes(
+      x = muestra, 
+      low = -c_menos, # Límite inferior de la barra
+      high = c_mas,   # Límite superior de la barra
+      color = factor(color)
+    ),
+    showInLegend = TRUE, 
+    lineWidth = 3, 
+    useHTML = TRUE,
+    # Nombre en la leyenda más claro
+    name = "<b><i>Rango CUSUM (C⁺, -C⁻)</i></b>",
+    # Mantenemos los marcadores en los extremos de la barra
+    marker = list(enabled = TRUE, symbol = "circle", radius = 2),
+    tooltip = list(
+      pointFormat = '<b>C⁺:</b> {point.high:.2f}<br/><b>-C⁻:</b> {point.low:.2f}<br/>',
+      shared = TRUE,
+      headerFormat = "<b>Muestra {point.key}</b><br/>"
+    )
+  ) |>
+  
+  hc_xAxis(
+    title = list(useHTML = TRUE, text = "<b><i>Muestra (i)</i></b>"),
+    crosshair = TRUE
+  ) |>
+  hc_yAxis(
+    title = list(useHTML = TRUE, text = "<b><i>Valor CUSUM</i></b>"),
+    plotLines = list(list(value = 0, color = "grey", width = 1, zIndex = 1))
+  ) |>
+  hc_tooltip(shared = TRUE) |>
+  hc_exporting(enabled = TRUE) |>
+  hc_plotOptions(series = list(animation = FALSE))
+```
+
+El diagrama de control CUSUM muestra que el proceso está fuera de control estadístico, ya que se observan señales de alarma. En la muestra 11, el valor de la suma acumulada (C⁺) excede el límite superior H=5, indicando un corrimiento al alza en el nivel promedio de la sustancia. Más adelante, en la muestra 21, se genera otra señal al cruzar el límite inferior (-H=-5), lo que evidencia un corrimiento persistente a la baja en la media del proceso, alejándose en ambos casos del valor objetivo de 15. Por lo que se procedera a eliminar estos valores de nuestros y recalcular los valores de CUSUM, para ver si el proceso se encuentra en control estadístico nuevamente.
+
+Se tiene nuevamente la tabla de datos, pero esta vez sin los valores que se encuentran fuera de control, los cuales se pueden ver en la @tbl-datos-cusum-corregidos:
+```{r}
+#| label: tbl-datos-cusum-corregidos
+#| tbl-cap: "Nivel de una sustancia relacionada con la pureza de cierto producto químico orgánico comercial corregidos"
+
+#| table-caption: left
+#| class: output
+
+# Se definen los parámetros del problema para fácil acceso y modificación
+mu0 <- 15  # Valor objetivo
+k <- 0.5   # Valor de referencia (allowance)
+h <- 5     # Límite de decisión
+
+data_cusum_raw <- tibble::tibble(
+  `muestra` = 1:18,
+  `x_i` = c(
+    15.3, 15.7, 14.4, 14.0, 15.2, 15.8, 16.7, 16.6, 15.9,
+    17.4, 14.7, 15.2, 14.6, 13.7, 12.9, 13.2,
+    14.1, 14.2)
+)
+data_cusum_prelim <- data_cusum_raw |>
+  dplyr::mutate(
+    `col_b` = x_i - mu0,
+    `col_c` = cumsum(col_b)
+  ) |>
+  data.table::data.table()
+
+knitr::kable(
+  data_cusum_prelim,
+  format = "markdown",
+  digits = 4,
+  format.args = list(decimal.mark = ",", big.mark = "."),
+  col.names = c(
+    "$Muestra \\: (i)$", "$(a)\\:x_i$", "$(b)\\:x_i - 15$",
+    "$(c)\\: \\sum_{j=1}^{i} (x_j - 15)$"
+  ),
+  align = "cccc",
+  escape = FALSE
+)
+```
+
+Ahora se vuelven a calcular los valores de CUSUM, pero esta vez con los datos corregidos, los cuales se pueden ver en la @tbl-datos-cusum-2:
+
+```{r}
+#| label: tbl-datos-cusum-2
+#| tbl-cap:  "Cálculos para el diagrama CUSUM tabular corregido"
+#| tbl-align: left
+
+
+cusum_stats <- function(x, mu_0 = 0, K, C_0 = 0) {
+  c_mas <- numeric(length = length(x))
+  n_mas <- numeric(length = length(x))
+  c_menos <- numeric(length = length(x))
+  n_menos <- numeric(length = length(x))
+  c_mas[1] <- max(0, x[1] - (mu_0 + K) + C_0)
+  n_mas[1] <- ifelse(c_mas[1] == 0, 0, 1)
+  c_menos[1] <- max(0, (mu_0 - K) - x[1] + C_0)
+  n_menos[1] <- ifelse(c_menos[1] == 0, 0, 1)
+  for (i in 2:length(x)) {
+    c_mas[i] <- max(0, x[i] - (mu_0 + K) + c_mas[i - 1])
+    n_mas[i] <- ifelse(c_mas[i] != 0, 1 + n_mas[i - 1], 0)
+    c_menos[i] <- max(0, (mu_0 - K) - x[i] + c_menos[i - 1])
+    n_menos[i] <- ifelse(c_menos[i] != 0, 1 + n_menos[i - 1], 0)
+  }
+  return(list(c_mas = c_mas, n_mas = n_mas, c_menos = c_menos, n_menos = n_menos))
+}
+
+cusum_calcs <- cusum_stats(data_cusum_raw$x_i, mu_0 = mu0, K = k)
+
+data_cusum_tabular <- data_cusum_raw |>
+  dplyr::mutate(
+    # Columnas intermedias para la tabla
+    col_b = x_i - (mu0 + k),
+    c_mas = cusum_calcs$c_mas,
+    n_mas = cusum_calcs$n_mas,
+    col_c = (mu0 - k) - x_i,
+    c_menos = cusum_calcs$c_menos,
+    n_menos = cusum_calcs$n_menos
+  ) |>
+  data.table::data.table()
+
+
+knitr::kable(  data_cusum_tabular,
+  format = "markdown",
+  digits = 4,
+  format.args = list(decimal.mark = ",", big.mark = "."),
+  col.names = c(
+    "Periodo ($i$)", "$x_i$", "$x_i - (\\mu_0+k) = x_i - 15,5$",
+    "$C_i^+$", "$N^+$", "$(\\mu_0-k) - x_i = 14,5 - x_i$", "$C_i^-$",
+    "$N^-$"
+  ),
+  align = "cccccccc",
+  escape = FALSE
+)
+```
+
+Una vez realizados los calculos necesarios para calcular el diagrama CUSUM nuevamente, el cual se puede ver a continuación:
+
+```{r}
+#| label: fig-cusum-tabular-highcharter-2
+#| fig-cap: "Diagrama de control CUSUM corregido para el Nivel de una sustancia relacionada con la pureza de cierto producto químico orgánico comercial"
+
+# Definir color de puntos fuera de control usando el parámetro h
+color <- ifelse(
+  data_cusum_tabular$c_mas > h | data_cusum_tabular$c_menos > h, 
+  "#FF0000", # Rojo para puntos fuera de control
+  "#0000FF"  # Azul para puntos en control
+)
+
+highchart() |>
+  # Límites de control H y -H 
+  hc_add_series(
+    data = data_cusum_tabular,
+    type = "line", hcaes(x = muestra, y = h), 
+    useHTML = TRUE, color = "red", 
+    dashStyle = "Dash", name = "<b><i>H</i></b>",
+    marker = list(enabled = FALSE)
+  ) |>
+  hc_add_series(
+    data = data_cusum_tabular,
+    type = "line", hcaes(x = muestra, y = -h), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", 
+    name = "<b><i>-H</i></b>",
+    marker = list(enabled = FALSE)
+  ) |>
+  
+  hc_add_series(
+    data = data_cusum_tabular, 
+    type = "errorbar",
+    hcaes(
+      x = muestra, 
+      low = -c_menos, # Límite inferior de la barra
+      high = c_mas,   # Límite superior de la barra
+      color = factor(color)
+    ),
+    showInLegend = TRUE, 
+    lineWidth = 3, 
+    useHTML = TRUE,
+    # Nombre en la leyenda más claro
+    name = "<b><i>Rango CUSUM (C⁺, -C⁻)</i></b>",
+    # Mantenemos los marcadores en los extremos de la barra
+    marker = list(enabled = TRUE, symbol = "circle", radius = 2),
+    tooltip = list(
+      pointFormat = '<b>C⁺:</b> {point.high:.2f}<br/><b>-C⁻:</b> {point.low:.2f}<br/>',
+      shared = TRUE,
+      headerFormat = "<b>Muestra {point.key}</b><br/>"
+    )
+  ) |>
+  
+  hc_xAxis(
+    title = list(useHTML = TRUE, text = "<b><i>Muestra (i)</i></b>"),
+    crosshair = TRUE
+  ) |>
+  hc_yAxis(
+    title = list(useHTML = TRUE, text = "<b><i>Valor CUSUM</i></b>"),
+    plotLines = list(list(value = 0, color = "grey", width = 1, zIndex = 1))
+  ) |>
+  hc_tooltip(shared = TRUE) |>
+  hc_exporting(enabled = TRUE) |>
+  hc_plotOptions(series = list(animation = FALSE))
+```
+
+En este diagrama de control CUSUM corregido, el proceso se muestra en estado de control estadístico. Una vez eliminadas las muestras que generaron las alarmas anteriores, se observa que todos los puntos del rango CUSUM (C⁺, C⁻) se encuentran dentro de los límites de decisión superior (H=5) e inferior (-H=-5). Esto indica que, sin la influencia de esas causas especiales de variación, el nivel de pureza de la sustancia se ha mantenido estable y dentro de los parámetros de control establecidos.
+
+:::
+::::
+
+## Diagrama de Control de Promedio Móvil Ponderado Exponencialmente (EWMA)
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dcewma .Example}
+### Aplicación del Diagrama de Control de Promedio Móvil Ponderado Exponencialmente (EWMA)
+
+Los datos en la @tbl-ewma representan observaciones individuales del peso molecular tomadas cada hora en un proceso químico. El valor objetivo del peso molecular es 1050 y se piensa que la desviación estándar del proceso es de aproximadamente $\sigma=25$. Utilice una carta de control EWMA con $\lambda=0.1$ y $L=2.7$. Este ejercicio fue extraído de @montgomery2004control.
+```{r}
+#| label: tbl-ewma
+#| tbl-cap: "Cálculo del EWMA para los pesos moleculares de un proceso químico."
+#| table-caption: left
+#| class: output
+
+data_ewma <- tibble::tibble(
+  `muestra` = 1:20,
+  `x_i` = c(
+    1045, 1055,1037,1064,1095,1008,1050,1087,1125,1146,
+    1139,1169,1151,1128,1238,1125,1163,1188,1146,1167
+  )
+)
+
+data_ewma <- data_ewma |>
+  dplyr::mutate(
+    ewma = qcc::ewma(
+      data = data_ewma$x_i, sizes = 1, center = 1050, std.dev = 25, 
+      lambda = 0.1, nsigmas = 2.7, plot = FALSE
+    )$y
+  ) |>
+  dplyr::bind_cols(
+    qcc::ewma(
+      data = data_ewma$x_i, sizes = 1, center = 1050, std.dev = 25, 
+      lambda = 0.1, nsigmas = 2.7, plot = FALSE
+    )$limits
+  ) |> 
+  data.table::data.table()
+
+knitr::kable(
+  data_ewma,
+  format = "markdown",
+  digits = 4,
+  format.args = list(decimal.mark = ",", big.mark = "."),
+  col.names = c(
+    "$\\textbf{Periodo} \\: \\left( i \\right)$", "$x_i$", 
+    "$\\textbf{EWMA} \\: \\left( z_i \\right)$",
+    "$LCI$", "$LCS$"
+  ),
+  align = "ccccc",
+  escape = FALSE
+)
+
+```
+
+Una vez ya calcualdos los respectivos valores de EWMA para los pesos moleculares de un proceso químico. Se procede a realizar el diagrama de control utilizando el paquete `highcharter`. La cual se puede observar a continuación:
+
+```{r}
+#| label: fig-ewma-highcharter
+#| fig-cap: "Diagrama EWMA con el paquete `highcharter`"
+
+q <-  ewma(
+  data = data_ewma$x_i, sizes = 1, center = 1050, std.dev = 25, 
+  lambda = 0.1, nsigmas = 2.7, plot = FALSE
+) 
+
+color <- ifelse(data_ewma$muestra %in% q$violations, "#FF0000", "#000000")
+symbol <- ifelse(data_ewma$muestra %in% q$violations, "asterisk-open", "circle")
+
+highchart() |>
+  hc_add_series(
+    data = data_ewma, hcaes(x = muestra, low = UCL, high = 1050),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, 
+    name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = data_ewma, hcaes(x = muestra, low = LCL, high = 1050),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, 
+    name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data_ewma, type = "line", 
+    hcaes(x = muestra, y = UCL), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</i></b>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 4)
+  ) |>
+  hc_add_series(
+    data_ewma,
+    type = "line", hcaes(x = muestra, y = 1050), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</i></b>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 0)
+  ) |>
+  hc_add_series(
+    data_ewma, type = "line", hcaes(x = muestra, y = LCL), 
+    useHTML = TRUE, color = "red", dashStyle = "Dash", 
+    name = "<b><i>LCI</i></b>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list( valueDecimals = 4)
+  ) |>
+  hc_add_series(
+    data_ewma, type = "line", color = "black",
+    hcaes(
+      x = muestra, y = ewma, segmentColor = color, 
+      color = color, symbol = symbol
+    ),
+    marker = list(radius = 3, color = color, symbol = symbol),
+    useHTML = TRUE, name = "<b><i>EWMA</i></b>",
+    dashStyle = "Dash",
+    tooltip = list( valueDecimals = 4)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Periodo (i)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>EWMA",
+      # max = 0.5,
+      # min = 0,
+      startOnTick = FALSE
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions( series = list(animation = TRUE)) 
+```
+
+El diagrama de control EWMA para el peso molecular muestra que el proceso operó de manera estable durante los primeros nueve períodos, con el estadístico fluctuando alrededor del valor objetivo de 1050. Sin embargo, a partir del período 10, se genera una clara señal de fuera de control, ya que el valor de EWMA cruza y se mantiene por encima del Límite de Control Superior (LCS). Esto indica que ha ocurrido un corrimiento persistente al alza en el peso molecular promedio del producto, evidenciando que el proceso ha perdido su estabilidad estadística. Por lo que se procedera a eliminar aquellos puntos que causan el corroimiento. Teniendo entonces que los datos corregidos se pueden ver en la @tbl-ewma-corregido:
+
+
+```{r}
+#| label: tbl-ewma-corregido
+#| tbl-cap: "Cálculo del EWMA para los datos de la @tbl-ewma corregidos"
+#| table-caption: left
+#| class: output
+
+data_ewma <- tibble::tibble(
+  `muestra` = 1:9,
+  `x_i` = c(
+    1045, 1055,1037,1064,1095,1008,1050,1087,1125
+  )
+)
+
+data_ewma <- data_ewma |>
+  dplyr::mutate(
+    ewma = qcc::ewma(
+      data = data_ewma$x_i, sizes = 1, center = 1050, std.dev = 25, 
+      lambda = 0.1, nsigmas = 2.7, plot = FALSE
+    )$y
+  ) |>
+  dplyr::bind_cols(
+    qcc::ewma(
+      data = data_ewma$x_i, sizes = 1, center = 1050, std.dev = 25, 
+      lambda = 0.1, nsigmas = 2.7, plot = FALSE
+    )$limits
+  ) |> 
+  data.table::data.table()
+
+knitr::kable(
+  data_ewma,
+  format = "markdown",
+  digits = 4,
+  format.args = list(decimal.mark = ",", big.mark = "."),
+  col.names = c(
+    "$\\textbf{Periodo} \\: \\left( i \\right)$", "$x_i$", 
+    "$\\textbf{EWMA} \\: \\left( z_i \\right)$",
+    "$LCI$", "$LCS$"
+  ),
+  align = "ccccc",
+  escape = FALSE
+)
+
+```
+
+Una vez que se tienen los datos corregidos, se procede a realizar el diagrama de control utilizando el paquete `highcharter`. La cual se puede observar a continuación:
+
+```{r}
+#| label: fig-ewma-highcharter-corregido
+#| fig-cap: "Diagrama EWMA con el paquete `highcharter` corregido"
+
+q <-  ewma(
+  data = data_ewma$x_i, sizes = 1, center = 1050, std.dev = 25, 
+  lambda = 0.1, nsigmas = 2.7, plot = FALSE
+) 
+
+color <- ifelse(data_ewma$muestra %in% q$violations, "#FF0000", "#000000")
+symbol <- ifelse(data_ewma$muestra %in% q$violations, "asterisk-open", "circle")
+
+highchart() |>
+  hc_add_series(
+    data = data_ewma, hcaes(x = muestra, low = UCL, high = 1050),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, 
+    name = "", color = "green",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data = data_ewma, hcaes(x = muestra, low = LCL, high = 1050),
+    step = "hv", marker = list(enabled = FALSE, visible = FALSE),
+    type = "arearange", fillOpacity = 0.2, 
+    name = "", color = "blue",
+    showInLegend = FALSE, tooltip = list(pointFormat = "{NULL}")
+  ) |>
+  hc_add_series(
+    data_ewma, type = "line", 
+    hcaes(x = muestra, y = UCL), useHTML = TRUE,
+    color = "red", dashStyle = "Dash", name = "<b><i>LCS</i></b>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 4)
+  ) |>
+  hc_add_series(
+    data_ewma,
+    type = "line", hcaes(x = muestra, y = 1050), useHTML = TRUE,
+    color = "blue", name = "<b><i>LC</i></b>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 0)
+  ) |>
+  hc_add_series(
+    data_ewma, type = "line", hcaes(x = muestra, y = LCL), 
+    useHTML = TRUE, color = "red", dashStyle = "Dash", 
+    name = "<b><i>LCI</i></b>",
+    step = "hv", marker = list(enabled = FALSE),
+    tooltip = list( valueDecimals = 4)
+  ) |>
+  hc_add_series(
+    data_ewma, type = "line", color = "black",
+    hcaes(
+      x = muestra, y = ewma, segmentColor = color, 
+      color = color, symbol = symbol
+    ),
+    marker = list(radius = 3, color = color, symbol = symbol),
+    useHTML = TRUE, name = "<b><i>EWMA</i></b>",
+    dashStyle = "Dash",
+    tooltip = list( valueDecimals = 4)
+  ) |>
+  hc_xAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>Periodo (i)</i></b><br>"
+    )
+  ) |>
+  hc_yAxis(
+    title = list(
+      useHTML = TRUE,
+      text = "<b><i>EWMA",
+      # max = 0.5,
+      # min = 0,
+      startOnTick = FALSE
+    )
+  ) |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE) |> 
+  hc_plotOptions( series = list(animation = TRUE)) 
+```
+
+En este diagrama EWMA corregido, que analiza los primeros nueve períodos del proceso, se observa que el peso molecular se encuentra en estado de control estadístico. El estadístico EWMA (línea negra punteada) fluctúa de manera estable alrededor de la línea central de 1050, manteniéndose en todo momento dentro de los límites de control superior (LCS) e inferior (LCI). Esto confirma que, antes del corrimiento al alza detectado en el gráfico original, el proceso operaba de forma predecible y sin la presencia de causas especiales de variación.
+
+:::
+::::
+
+## Diagrama de Control $T^2$ de Hotelling
+
+
+:::: {.callout-tip icon="false" appearance="simple"}
+::: {#exm-dchi .Example}
+## Aplicación del Diagrama $T^{2}$ de Hotelling para Subgrupos {#sec-ejemplo-diagrama-h2}
+
+En el proceso de fabricación de una fibra textil sintética, la resistencia a la tensión (X₁) y el diámetro (X₂) son dos características de calidad críticas que deben ser monitoreadas de forma conjunta. Se sabe que estas variables están correlacionadas, por lo que un control univariado por separado podría no detectar problemas en la calidad final del producto.
+Para establecer un control estadístico del proceso (Fase I), un ingeniero de calidad ha recolectado 20 muestras preliminares (m = 20), cada una compuesta por 3 ejemplares de fibra (n = 3). El análisis de estos datos arrojó los siguientes estadísticos resumen:
+Vector de medias globales:
+$\bar{\bar{x}} = \begin{bmatrix} 115.59 \text{ psi} \\ 0.0106 \text{ pulgadas} \end{bmatrix}$
+Matriz de varianzas-covarianzas promedio:
+
+$\bar{S} = \begin{bmatrix} 1.23 & 0.79 \\ 0.79 & 0.83 \end{bmatrix}$
+Se solicita:
+Establecer los límites de control para un diagrama T² de Hotelling que permita monitorear el proceso en el futuro.
+Utilizar un nivel de significancia de α = 0.001.
+Concluir si el proceso puede considerarse en estado de control estadístico a partir de estos datos preliminares.
+
+```{r}
+#| label: tbl-data-fibra
+#| tbl-cap: "Datos simulados de Resistencia y Diámetro para 20 muestras de fibra textil."
+#| message: false
+#| warning: false
+
+# Parámetros
+p <- 2      # variables
+n <- 3     # observaciones por muestra
+m <- 20     # número de muestras
+
+# Medias y matriz de varianza-covarianza
+vec_medias_objetivo <- c(115.59, 1.06)
+matriz_var_cov_objetivo <- matrix(
+  c(1.23, 0.079,
+    0.079, 0.0083),
+  nrow = 2, byrow = TRUE,
+  dimnames = list(c("Resistencia", "Diametro"), c("Resistencia", "Diametro"))
+)
+
+# Simulación
+set.seed(135711)
+datos_simulados <- rmvnorm(n = m * n, mean = vec_medias_objetivo, sigma = matriz_var_cov_objetivo)
+
+# Data frame largo
+data_fibra <- data.frame(
+  Resistencia = datos_simulados[,1],
+  Diametro = datos_simulados[,2],
+  Muestra = factor(rep(1:m, each = n))
+)
+
+# Crear tabla ancha: cada fila es una muestra con R1..Rn y D1..Dn
+data_fibra_ancha <- dplyr::bind_cols(
+  qcc::qcc.groups(data_fibra$Resistencia, data_fibra$Muestra),
+  qcc::qcc.groups(data_fibra$Diametro, data_fibra$Muestra)
+) |>
+  dplyr::rename_with(~paste0("R", 1:n), 1:n) |>
+  dplyr::rename_with(~paste0("D", 1:n), (n + 1):(n + n)) |>
+  dplyr::mutate(Muestra = 1:m, .before = 1)
+
+# Mostrar tabla con scroll horizontal
+htmltools::div(
+  style = "overflow-x: auto;",
+  reactable::reactable(
+    data_fibra_ancha,
+    columns = list(
+      Muestra = colDef(name = "Muestra (i)", sticky = "left", style = list(fontWeight = "bold")),
+      .list = c(
+        lapply(paste0("R", 1:n), function(col) {
+          colDef(name = gsub("R", "", col), format = colFormat(digits = 2))
+        }),
+        lapply(paste0("D", 1:n), function(col) {
+          colDef(name = gsub("D", "", col), format = colFormat(digits = 4))
+        })
+      )
+    ),
+    columnGroups = list(
+      colGroup(name = "Muestra", columns = "Muestra"),
+      colGroup(name = "Resistencia (psi)", columns = paste0("R", 1:n)),
+      colGroup(name = "Diámetro (mm)", columns = paste0("D", 1:n))
+    ),
+    bordered = TRUE, striped = TRUE, highlight = TRUE,
+    defaultPageSize = 10,
+    resizable = TRUE, filterable = TRUE,
+    defaultColDef = colDef(minWidth = 80),
+    wrap = FALSE,
+    fullWidth = TRUE
+  )
+)
+
+```
+
+Se procede ahora a calcular los estadísticos para los datos del proceso de fibra textil, los cuales se pueden ver a continuación:
+
+```{r}
+#| label: tbl-data-fibra-estadisticos
+#| tbl-cap: "Estadísticos para los datos del proceso de fibra textil"
+#| message: false
+#| warning: false
+
+# Preparar datos para mqcc
+data_list_fibra <- list(
+  Resistencia = as.matrix(data_fibra_ancha[, paste0("R", 1:n)]),
+  Diametro = as.matrix(data_fibra_ancha[, paste0("D", 1:n)])
+)
+
+# Calcular T² con qcc::mqcc
+q_fibra <- qcc::mqcc(data = data_list_fibra, type = "T2", plot = FALSE)
+
+# Calcular estadísticas por muestra
+data_fibra_estad <- data_fibra_ancha |>
+  dplyr::rowwise() |>
+  dplyr::transmute(
+    Muestra = Muestra,
+    X1_barra = mean(c_across(starts_with("R"))),
+    X2_barra = mean(c_across(starts_with("D"))),
+    S1_sq = var(c_across(starts_with("R"))),
+    S2_sq = var(c_across(starts_with("D"))),
+    S12 = cov(c_across(starts_with("R")), c_across(starts_with("D")))
+  ) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    T2 = q_fibra$statistics,
+    .after = S12
+  )
+
+# Mostrar tabla con scroll
+htmltools::div(
+  style = "overflow-x: auto;",
+  reactable::reactable(
+    data_fibra_estad,
+    columns = list(
+      Muestra = colDef(name = "\\(i\\)"),
+      X1_barra = colDef(name = "\\(\\overline{X}_{i1}\\)", format = colFormat(digits = 2)),
+      X2_barra = colDef(name = "\\(\\overline{X}_{i2}\\)", format = colFormat(digits = 4)),
+      S1_sq = colDef(name = "\\(S_{i1}^2\\)", format = colFormat(digits = 2)),
+      S2_sq = colDef(name = "\\(S_{i2}^2\\)", format = colFormat(digits = 2)),
+      S12 = colDef(name = "\\(S_{i12}\\)", format = colFormat(digits = 2)),
+      T2 = colDef(name = "\\(T_i^2\\)", format = colFormat(digits = 2))
+    ),
+    columnGroups = list(
+      colGroup(name = "Media muestral", columns = c("X1_barra", "X2_barra")),
+      colGroup(name = "Varianza-Covarianza", columns = c("S1_sq", "S2_sq", "S12")),
+      colGroup(name = "Estadístico", columns = "T2")
+    ),
+    bordered = TRUE, striped = TRUE, highlight = TRUE,
+    defaultPageSize = 10,
+    defaultColDef = colDef(minWidth = 80),
+    wrap = FALSE,
+    fullWidth = TRUE
+  )
+)
+```
+
+Ahora se proceden a calcular los limites de control:
+
+```{r}
+#| label: lsc-hotelling-fibra
+
+# Nivel de significancia del problema
+alpha <- 0.001
+
+# Límite de Control Superior (LSC) para Fase I
+LSC <- ((p * (m - 1) * (n - 1)) / (m * n - m - p + 1)) * qf(1 - alpha, p, m * n - m - p + 1)
+LIC <- 0
+
+# Mostrar los límites calculados
+cat(paste("LSC =", round(LSC, 4), "\nLIC =", LIC))
+
+# Nota: El límite calculado por qcc debería ser idéntico
+# q_fibra$limits
+```
+
+Como ya se tienen los limites de control, ya es posible graficar el diagrama. El mismo se ve de la siguiente manera:
+
+```{r}
+#| label: fig-fibra-highcharter
+#| fig-cap: "Diagrama T² de Hotelling para los datos del proceso de fibra textil."
+
+# Añadir una columna para identificar violaciones
+data_fibra_estad <- data_fibra_estad |>
+  mutate(
+    violacion = ifelse(T2 > LSC, "Fuera de Control", "En Control")
+  )
+
+highchart() |>
+  hc_add_series(
+    data = data.frame(x = c(1, m), low = LIC, high = LSC),
+    type = "arearange", hcaes(x = x, low = low, high = high),
+    name = "Zona de control", color = "rgba(144, 238, 144, 0.4)",
+    showInLegend = TRUE, enableMouseTracking = FALSE
+  ) |>
+  hc_add_series(
+    data = data.frame(x = c(1, m), y = LSC),
+    type = "line", hcaes(x = x, y = y),
+    name = "LSC", color = "red", dashStyle = "Dash",
+    marker = list(enabled = FALSE)
+  ) |>
+  hc_add_series(
+    data = data_fibra_estad,
+    type = "line",
+    hcaes(x = Muestra, y = T2),
+    name = "T²", color = "blue",
+    marker = list(enabled = FALSE),
+    tooltip = list(valueDecimals = 3)
+  ) |>
+  # Serie separada para los puntos, para poder colorearlos
+  hc_add_series(
+    data = data_fibra_estad,
+    type = "scatter",
+    hcaes(x = Muestra, y = T2, color = violacion),
+    showInLegend = FALSE,
+    tooltip = list(pointFormat = "<b>T²:</b> {point.y:.3f}")
+  ) |>
+  hc_colors(c("blue", "red")) |> # Define los colores para "En Control" y "Fuera de Control"
+  hc_xAxis(
+    title = list(text = "Muestra (i)"),
+    allowDecimals = FALSE
+  ) |>
+  hc_yAxis(
+    title = list(text = "Estadístico T²"),
+    plotLines = list(list(value = mean(data_fibra_estad$T2), color = "darkgreen", dashStyle = "Dot", width = 1, zIndex = 1, label = list(text = "Media T²")))
+  ) |>
+  hc_tooltip(
+    crosshairs = TRUE, shared = TRUE, borderWidth = 2,
+    headerFormat = "<b>Muestra {point.key}</b><br/>"
+  ) |>
+  hc_legend(align = "right", verticalAlign = "top") |>
+  hc_title(text = "Diagrama de Control T² de Hotelling") |>
+  hc_subtitle(text = "Resistencia vs. Diámetro de Fibra Textil")
+```
+
+El diagrama de control T² de Hotelling, que evalúa de forma conjunta la resistencia y el diámetro de la fibra textil, muestra que el proceso se encuentra en estado de control estadístico. Esta conclusión se deriva de que los valores del estadístico T² para las 20 muestras se sitúan por debajo del Límite de Control Superior (LSC). Al no observarse puntos fuera de control ni patrones extraños, se confirma que la variabilidad conjunta de ambas características es estable, por lo que estos datos son adecuados para establecer los límites de control para la vigilancia futura del proceso (Fase II).
+
+:::
+::::
