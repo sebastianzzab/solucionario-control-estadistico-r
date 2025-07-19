@@ -3,6 +3,13 @@ title: "Diagramas de Control para Variables y Análisis de Indices de Capacidad 
 ---
 
 # Diagramas de control para variables
+```{r}
+#| label: knitr-opts-chunk-set
+#| include: false
+#| echo: false
+
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, results = "asis")
+```
 
 Los diagramas de control para variables son herramientas gráficas del Control Estadístico de Procesos (CEP) que se usan para monitorear y analizar un proceso a lo largo del tiempo. Su objetivo principal es distinguir entre las variaciones comunes (aleatorias e inherentes al proceso) y las variaciones especiales o asignables (causadas por eventos específicos e inesperados).
 
@@ -44,16 +51,17 @@ En el siguiente bloque de código se cargan todas las librerías o paquetes nece
 
 ```{r}
 #| label: carga-paquetes-necesarios
-#| include: false
+
+# Funcion para instalar  y/o cargar el paquete pacman
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 library(pacman)
+# Funcion para cargar (o instalar y cargar) los paquetes que vamos a usar a traves de la funcion del paquete pacman
 pacman::p_load(ggplot2,ggfortify, DT, reshape2, knitr,  tidyverse, ggQC, pammtools, latex2exp, data.table, reactable, htmlwidgets, htmltools, highcharter, tinytex, qcc, kableExtra)
 ```
 
 Del mismo modo, se crea una base de datos bib para los paquetes de R que se están utilizando en este capitulo, la cual se puede usar para crear una bibliografía al final del capitulo.
 
 ```{r}
-#| include: false
 #| label: creacion-bibliografias
 
 # Crear automaticamente una base de datos bib para los paquetes de R 
@@ -73,7 +81,6 @@ Por otro lado, aqui se crean funciones propias para darle formato a las salidas 
 
 ```{r}
 #| label: funciones-creadas
-#| include: false
 
 # funcion para ajustar fill-opacity usando css
 fillOpacity <- function(., alpha = 0.5) {

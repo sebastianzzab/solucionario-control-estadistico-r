@@ -3,7 +3,7 @@ project:
 
 book:
   title: "Diagramas de Control para Variables y Análisis de Indices de Capacidad de Procesos Aplicados con ${\\color{Blue} \\textbf{\\textsf{R}}}$"
-  abstract: El presente trabajo compila un conjunto de soluciones a ejercicios sobre Control Estadístico de Procesos (CEP), enfocándose en los diagramas de control por variables y el análisis de capacidad de procesos. La metodología principal es la implementación de estas técnicas mediante el uso del lenguaje de programación R, aprovechando su potencial para el cálculo computacional y la visualización de datos. Cada ejercicio demuestra el procedimiento completo, desde la estructuración de los datos hasta la generación de gráficos y el cálculo de índices, culminando con la interpretación de los resultados para la toma de decisiones. Desarrollado en el marco de la asignatura Control Estadístico de la Calidad de la Universidad de Oriente, este compendio sirve como una guía de referencia práctica que conecta la teoría estadística con su aplicación moderna, facilitando el aprendizaje y la implementación del CEP.
+  abstract: El presente trabajo compila un conjunto de soluciones a ejercicios sobre Control Estadístico de Procesos (CEP), enfocándose en los diagramas de control CUSUM, EWMA, MA y $T^2$ de Hotelling. La metodología principal es la implementación de estas técnicas mediante el uso del lenguaje de programación R, aprovechando su potencial para el cálculo computacional y la visualización de datos. Cada ejercicio demuestra el procedimiento completo, desde la estructuración de los datos hasta la generación de gráficos, culminando con la interpretación de los resultados para la toma de decisiones. Desarrollado en el marco de la asignatura Control Estadístico de la Calidad de la Universidad de Oriente, este compendio sirve como una guía de referencia práctica que conecta la teoría estadística con su aplicación moderna, facilitando el aprendizaje y la implementación del CEP.
   author:
   - name: Sebastian Zabala
     email: sebastianzabalaza@gmail.com
@@ -53,6 +53,7 @@ format:
     css: styles.css
     html:
       toc-title: Contenido
+      math-method: mathjax
     # cover-image: zonas.png
     # favicon: logo.png
     # include-in-header:

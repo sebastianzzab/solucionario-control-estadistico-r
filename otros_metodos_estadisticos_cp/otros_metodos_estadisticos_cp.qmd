@@ -30,46 +30,21 @@ library(pacman)
 pacman::p_load(ggplot2,ggfortify, DT, reshape2, knitr,  tidyverse, ggQC, pammtools, latex2exp, data.table, reactable, htmlwidgets, htmltools, highcharter, tinytex, qcc, kableExtra,mvtnorm)
 ```
 
-Del mismo modo, se crea una base de datos .bib para los paquetes de R que se están utilizando en este capitulo, la cual se puede usar para crear una bibliografía al final del capitulo.
-
 ```{r}
 #| label: creacion-bibliografias
+#| echo: false
+#| include: false
 
 # Crear automaticamente una base de datos bib para los paquetes de R 
 knitr::write_bib(
   c(
     .packages(), "knitr", "tidyverse", "qcc", "ggQC", "plotly",
     "highcharter", "kableExtra", "data.table", "pacman",
-    "renv", "pammtools", "htmlwidgets", "htmltools", "data.table",
+    "renv", "pammtools", "htmlwidgets", "htmltools",
     "RColorBrewer", "latex2exp", "tinytex", "reactable"
   ),
   "packages.bib"
 )
-
-```
-
-Por otro lado, aqui se crean funciones propias para darle formato a las salidas imprimidas en pantalla. las cuales se pueden usar en cualquier parte del capitulo.
-
-```{r}
-#| label: funciones-creadas
-
-# funcion para ajustar fill-opacity usando css
-fillOpacity <- function(., alpha = 0.5) {
-  css <- sprintf("<style> .js-fill { fill-opacity: %s}
-!important; } </style>", alpha)
-  prependContent(., HTML(css))
-}
-
-# funcion para dar formato a numero
-formato <- function(x, digits = 4) {
-  if (!is.numeric(x)) stop("¡La entrada debe ser numerica!")
-  format(
-    round(x, digits = digits),
-    mode = "double",
-    big.mark = ".",
-    decimal.mark = ","
-  )
-}
 
 ```
 
@@ -243,9 +218,9 @@ highchart() |>
   hc_plotOptions(series = list(animation = FALSE))
 ```
 
-El diagrama de control CUSUM muestra que el proceso está fuera de control estadístico, ya que se observan señales de alarma. En la muestra 11, el valor de la suma acumulada (C⁺) excede el límite superior H=5, indicando un corrimiento al alza en el nivel promedio de la sustancia. Más adelante, en la muestra 21, se genera otra señal al cruzar el límite inferior (-H=-5), lo que evidencia un corrimiento persistente a la baja en la media del proceso, alejándose en ambos casos del valor objetivo de 15. Por lo que se procedera a eliminar estos valores de nuestros y recalcular los valores de CUSUM, para ver si el proceso se encuentra en control estadístico nuevamente.
+El diagrama de control CUSUM muestra que el proceso está fuera de control estadístico, ya que se observan señales de alarma. En la muestra 11, el valor de la suma acumulada (C⁺) excede el límite superior H=5, indicando un corrimiento al alza en el nivel promedio de la sustancia. Más adelante, en la muestra 21, se genera otra señal al cruzar el límite inferior (-H=-5), lo que evidencia un corrimiento persistente a la baja en la media del proceso, alejándose en ambos casos del valor objetivo de 15. Dado que se detectó una señal en la muestra 11 y otra en la 21, se procede a eliminar los puntos que generaron estas señales y los que les siguieron inmediatamente (muestras 11, 12, 21 y 22) para recalcular los límites con un conjunto de datos que represente el proceso bajo control.
 
-Se tiene nuevamente la tabla de datos, pero esta vez sin los valores que se encuentran fuera de control, los cuales se pueden ver en la @tbl-datos-cusum-corregidos:
+Se tiene nuevamente la tabla de datos, pero esta vez sin los valores de las muestras que se encuentran fuera de control, pudiendo ver los cambios en la @tbl-datos-cusum-corregidos:
 ```{r}
 #| label: tbl-datos-cusum-corregidos
 #| tbl-cap: "Nivel de una sustancia relacionada con la pureza de cierto producto químico orgánico comercial corregidos"
@@ -286,7 +261,7 @@ knitr::kable(
 )
 ```
 
-Ahora se vuelven a calcular los valores de CUSUM, pero esta vez con los datos corregidos, los cuales se pueden ver en la @tbl-datos-cusum-2:
+Ahora se vuelven a calcular los valores de CUSUM, pero esta vez con los datos corregidos. Obteniendo los resultados que se aprecian en la @tbl-datos-cusum-2:
 
 ```{r}
 #| label: tbl-datos-cusum-2
@@ -341,7 +316,7 @@ knitr::kable(  data_cusum_tabular,
 )
 ```
 
-Una vez realizados los calculos necesarios para calcular el diagrama CUSUM nuevamente, el cual se puede ver a continuación:
+Una vez realizados los calculos necesarios ya se puede graficar el diagrama CUSUM nuevamente:
 
 ```{r}
 #| label: fig-cusum-tabular-highcharter-2
@@ -463,7 +438,7 @@ knitr::kable(
 
 ```
 
-Una vez ya calcualdos los respectivos valores de EWMA para los pesos moleculares de un proceso químico. Se procede a realizar el diagrama de control utilizando el paquete `highcharter`. La cual se puede observar a continuación:
+Una vez ya calculados los respectivos valores de EWMA para los pesos moleculares de un proceso químico. Se procede a realizar el diagrama de control utilizando el paquete `highcharter`. El cual se puede observar a continuación:
 
 ```{r}
 #| label: fig-ewma-highcharter
@@ -543,7 +518,7 @@ highchart() |>
   hc_plotOptions( series = list(animation = TRUE)) 
 ```
 
-El diagrama de control EWMA para el peso molecular muestra que el proceso operó de manera estable durante los primeros nueve períodos, con el estadístico fluctuando alrededor del valor objetivo de 1050. Sin embargo, a partir del período 10, se genera una clara señal de fuera de control, ya que el valor de EWMA cruza y se mantiene por encima del Límite de Control Superior (LCS). Esto indica que ha ocurrido un corrimiento persistente al alza en el peso molecular promedio del producto, evidenciando que el proceso ha perdido su estabilidad estadística. Por lo que se procedera a eliminar aquellos puntos que causan el corroimiento. Teniendo entonces que los datos corregidos se pueden ver en la @tbl-ewma-corregido:
+El diagrama de control EWMA para el peso molecular muestra que el proceso operó de manera estable durante los primeros nueve períodos, con el estadístico fluctuando alrededor del valor objetivo de 1050. Sin embargo, a partir del período 10, se genera una clara señal de fuera de control, ya que el valor de EWMA cruza y se mantiene por encima del Límite de Control Superior (LCS). Esto indica que ha ocurrido un corrimiento persistente al alza en el peso molecular promedio del producto, evidenciando que el proceso ha perdido su estabilidad estadística. Por lo que se procedera a eliminar aquellos puntos que causan el corrimiento. Teniendo entonces que los datos corregidos se pueden ver en la @tbl-ewma-corregido:
 
 
 ```{r}
@@ -682,21 +657,21 @@ En este diagrama EWMA corregido, que analiza los primeros nueve períodos del pr
 ::: {#exm-dchi .Example}
 ## Aplicación del Diagrama $T^{2}$ de Hotelling para Subgrupos {#sec-ejemplo-diagrama-h2}
 
-En el proceso de fabricación de una fibra textil sintética, la resistencia a la tensión (X₁) y el diámetro (X₂) son dos características de calidad críticas que deben ser monitoreadas de forma conjunta. Se sabe que estas variables están correlacionadas, por lo que un control univariado por separado podría no detectar problemas en la calidad final del producto.
-Para establecer un control estadístico del proceso (Fase I), un ingeniero de calidad ha recolectado 20 muestras preliminares (m = 20), cada una compuesta por 3 ejemplares de fibra (n = 3). El análisis de estos datos arrojó los siguientes estadísticos resumen:
-Vector de medias globales:
-$\bar{\bar{x}} = \begin{bmatrix} 115.59 \text{ psi} \\ 0.0106 \text{ pulgadas} \end{bmatrix}$
-Matriz de varianzas-covarianzas promedio:
-
+Para ilustrar la construcción y aplicación de un diagrama T² de Hotelling en Fase I, simularemos un conjunto de datos que representa el proceso de fabricación de una fibra textil sintética. En este proceso, la resistencia a la tensión (X₁) y el diámetro (X₂) son dos características de calidad críticas que están correlacionadas y deben monitorearse conjuntamente.
+Supondremos que el proceso, cuando se encuentra en estado de control estadístico, opera en torno a los siguientes parámetros objetivo:
+Vector de medias objetivo:
+$\bar{\bar{x}} = \begin{bmatrix} 115.59 \text{ psi} \\ 0.0106 \text{ mm} \end{bmatrix}$
+Matriz de varianzas-covarianzas objetivo:
 $\bar{S} = \begin{bmatrix} 1.23 & 0.79 \\ 0.79 & 0.83 \end{bmatrix}$
-Se solicita:
-Establecer los límites de control para un diagrama T² de Hotelling que permita monitorear el proceso en el futuro.
-Utilizar un nivel de significancia de α = 0.001.
-Concluir si el proceso puede considerarse en estado de control estadístico a partir de estos datos preliminares.
+A partir de estos parámetros, simularemos 20 muestras preliminares (m = 20), cada una compuesta por 3 ejemplares de fibra (n = 3).
+El objetivo es utilizar estos datos simulados para:
+- Realizar un análisis de Fase I.
+- Establecer el límite de control para un diagrama T² de Hotelling, utilizando un nivel de significancia de α = 0.001.
+- Verificar si el gráfico resultante muestra, como se espera, un proceso bajo control estadístico, validando así que los límites calculados serían adecuados para el monitoreo futuro (Fase II).
 
 ```{r}
 #| label: tbl-data-fibra
-#| tbl-cap: "Datos simulados de Resistencia y Diámetro para 20 muestras de fibra textil."
+#| tbl-cap: "Datos simulados para la Fase I del proceso de fibra textil, generados a partir de un vector de medias y una matriz de covarianzas objetivo."
 #| message: false
 #| warning: false
 
@@ -781,7 +756,7 @@ data_list_fibra <- list(
 )
 
 # Calcular T² con qcc::mqcc
-q_fibra <- qcc::mqcc(data = data_list_fibra, type = "T2", plot = FALSE)
+q_fibra <- qcc::mqcc(data = data_list_fibra, type = "T2", plot = FALSE, confidence.level = 0.999)
 
 # Calcular estadísticas por muestra
 data_fibra_estad <- data_fibra_ancha |>
@@ -832,7 +807,7 @@ Ahora se proceden a calcular los limites de control:
 
 ```{r}
 #| label: lsc-hotelling-fibra
-
+#| tbl-cap: "Límites de control para el diagrama T² de Hotelling del proceso de fibra textil"
 # Nivel de significancia del problema
 alpha <- 0.001
 
@@ -840,11 +815,12 @@ alpha <- 0.001
 LSC <- ((p * (m - 1) * (n - 1)) / (m * n - m - p + 1)) * qf(1 - alpha, p, m * n - m - p + 1)
 LIC <- 0
 
+# Nota: El límite calculado por qcc debería ser idéntico al que se obtiene manualmente
+#q_fibra$limits
+
 # Mostrar los límites calculados
 cat(paste("LSC =", round(LSC, 4), "\nLIC =", LIC))
 
-# Nota: El límite calculado por qcc debería ser idéntico
-# q_fibra$limits
 ```
 
 Como ya se tienen los limites de control, ya es posible graficar el diagrama. El mismo se ve de la siguiente manera:
