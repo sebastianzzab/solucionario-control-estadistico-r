@@ -17,6 +17,9 @@ Este proyecto incluye ejemplos y resolución paso a paso de los principales **di
 - Diagrama **$\bar{X}$** y **R**
 - Diagrama **$\bar{X}$** y **S**
 - Diagrama **MR**
+- Diagrama **CUSUM**
+- Diagrama **EWMA**
+- Diagrama **T2 de Hotelling**
 
 Cada ejercicio incluye:
 
